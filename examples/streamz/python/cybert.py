@@ -84,7 +84,7 @@ def worker_init():
         + " Label Map: "
         + str(args.label_map)
     )
-    cy.load_model(args.model, args.label_map)
+    cy.load_local_model(args.model)
     worker.data["cybert"] = cy
     print("Successfully initialized dask worker " + str(worker))
 

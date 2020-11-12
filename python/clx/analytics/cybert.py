@@ -89,6 +89,15 @@ class Cybert:
         self._model.cuda()
         self._model.eval()
 
+    def load_local_model(self, model_filepath):
+        config_filepath = model_filepath + "/config.json"
+        with open(config_filepath) as f:
+            config = json.load(f)
+        self._label_map = {int(k): v for k, v in config["id2label"].items()}
+        self._model = BertForTokenClassification.from_pretrained(model_filepath)
+        self._model.cuda()
+        self._model.eval()
+
     def preprocess(self, raw_data_col, stride_len=116, max_seq_len=128):
         """
         Preprocess and tokenize data for cybert model inference.

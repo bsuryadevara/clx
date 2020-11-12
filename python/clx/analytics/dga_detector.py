@@ -127,11 +127,12 @@ class DGADetector(Detector):
         input, seq_lengths = self.__create_variables(temp_df)
         del temp_df
         model_result = self.model(input, seq_lengths)
-        pred = model_result.data.max(1, keepdim=True)[1]
-        type_ids = pred.view(-1).tolist()
-        df["is_dga"] = type_ids
+        model_result = model_result[: , 0]
+        dga_proabability = torch.sigmoid(model_result)
+        dga_proabability = dga_proabability.view(-1).tolist()
+        df["dga_probability"] = dga_proabability
         df = df.sort_index()
-        return df["is_dga"]
+        return df["dga_probability"]
 
     def __create_types_tensor(self, type_series):
         """Create types tensor variable in the same order of sequence tensor"""
