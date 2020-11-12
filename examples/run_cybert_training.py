@@ -31,50 +31,64 @@ from seqeval.metrics import classification_report,accuracy_score,f1_score
 from transformers import BertForTokenClassification
 from tqdm import tqdm,trange
 from collections import defaultdict
+import random
+import argparse
 import pandas as pd
 import numpy as np
-from os import path
 import cupy
-import argparse
+
 
 def data_preprocessing(training_data):
+    #loading csv with header
     logs_df = cudf.read_csv(training_data)
     logs_df['raw_preprocess'] = logs_df.raw.str.replace('"','')
+    
     # column names to use as lables
     cols = logs_df.columns.values.tolist()
+    
     # do not use raw columns as labels
     cols.remove('raw')
     cols.remove('raw_preprocess')
+    
     # using for loop for labeling funcition until string UDF capability in rapids- it is currently slow
     labels = []
+    texts = []
     for indx in range(len(logs_df)):
-        labels.append(raw_labeler(logs_df, indx, cols))
-    subword_labels = subword_labeler(logs_df.raw_preprocess.to_arrow().to_pylist(), labels)
-    raw_preprocess = logs_df['raw_preprocess']
+        row_labels, row_raw = raw_labeler(logs_df, indx, cols)
+        labels.append(row_labels)
+        texts.append(row_raw)
+    subword_labels = subword_labeler(texts, labels)
     del logs_df
-    # set of labels
+    
+    # create set of labels
     label_values = list(set(x for l in labels for x in l))
     label_values[:0] = ['[PAD]']  
     label_values.append('X')
-    # Set a dict for mapping id to tag name
+    
+    # create a dict for mapping id to label name
     label2idx = {t: i for i, t in enumerate(label_values)}
+    idx2label = {v: k for k, v in label2idx.items()}
     padded_labels = [pad(x[:256], '[PAD]', 256) for x in subword_labels]
     int_labels = [[label2idx.get(l) for l in lab] for lab in padded_labels]
     label_tensor = torch.tensor(int_labels).to('cuda')
     del subword_labels    
-    input_ids, attention_masks = bert_cased_tokenizer(raw_preprocess)   
+    
+    input_ids, attention_masks = bert_cased_tokenizer(cudf.Series(texts))   
     # create dataset
+    
     dataset = TensorDataset(input_ids, attention_masks, label_tensor)
+    
     # use pytorch random_split to create training and validation data subsets
     dataset_size = len(input_ids)
     training_dataset, validation_dataset = random_split(dataset, (int(dataset_size*.8), int(dataset_size*.2)))
+    
     # create dataloader
     train_dataloader = DataLoader(dataset=training_dataset, shuffle=True, batch_size=32)
     val_dataloader = DataLoader(dataset=validation_dataset, shuffle=False, batch_size=1)
     print("Data Preprocessing Finished")         
-    return train_dataloader, val_dataloader, label2idx
+    return train_dataloader, val_dataloader, idx2label
     
-def train_model(model_dir, output_dir, train_dataloader, label2idx):
+def train_model(model_dir, train_dataloader):
     model = BertForTokenClassification.from_pretrained(model_dir)
     # model to gpu
     model.cuda();
@@ -95,8 +109,8 @@ def train_model(model_dir, output_dir, train_dataloader, label2idx):
         optimizer_grouped_parameters = [{"params": [p for n, p in param_optimizer]}]
     optimizer = Adam(optimizer_grouped_parameters, lr=3e-5)
     
-    # using 2 epochs to avoid overfitting
-    epochs = 2
+    # using 3 epochs to avoid overfitting
+    epochs = 3
     max_grad_norm = 1.0
 
     for _ in trange(epochs, desc="Epoch"):
@@ -122,12 +136,15 @@ def train_model(model_dir, output_dir, train_dataloader, label2idx):
             model.zero_grad()
         # print train loss per epoch
         print("Train loss: {}".format(tr_loss/nb_tr_steps)) 
-        torch.save(model.state_dict(), model_dir+'model.bin')
     return model
 
-def model_eval(model, val_dataloader, label2idx):
-          # Mapping index to name
-    idx2label={label2idx[key] : key for key in label2idx.keys()}
+def save_model(model, idx2label, output_dir):
+    model.config.id2label.update(idx2label)
+    model.config.label2id = ({v: k for k, v in model.config.id2label.items()})
+    model.save_pretrained(output_dir)
+    
+
+def model_eval(model, val_dataloader, idx2label):
 
     eval_loss, eval_accuracy = 0, 0
     nb_eval_steps, nb_eval_examples = 0, 0
@@ -180,12 +197,21 @@ def model_eval(model, val_dataloader, label2idx):
           
 def raw_labeler(df, index_no, cols):
     """
-    label the words in the raw log with the column name from the parsed log
+    sample log and label the sequences with the column name from the parsed log
     """
     raw_split = df.raw_preprocess[index_no].split()
-    
+    # if log is less than 100 whitespace words keep whole thing, otherwise random sample
+    len_raw = len(raw_split)
+    if len_raw > 100:
+        random_start = random.randint(0, len_raw-20)
+        sample_split = raw_split[random_start:random_start+200]
+        sampled_raw = (" ").join(sample_split)
+    else: 
+        sampled_raw = df.raw_preprocess[index_no]
+        sample_split = raw_split
+
     # words in raw but not in parsed logs labeled as 'other'
-    label_list = ['other'] * len(raw_split) 
+    label_list = ['other'] * len(sample_split) 
     
     # for each parsed column find the location of the sequence of words (sublist) in the raw log
     for col in cols:
@@ -193,13 +219,13 @@ def raw_labeler(df, index_no, cols):
             sublist = str(df[col][index_no]).split()
             sublist_len=len(sublist)
             match_count = 0
-            for ind in (i for i,el in enumerate(raw_split) if el==sublist[0]):
+            for ind in (i for i,el in enumerate(sample_split) if el==sublist[0]):
                 # words in raw log not present in the parsed log will be labeled with 'other'
-                if ((match_count < 1) and (raw_split[ind:ind+sublist_len]==sublist) and 
+                if ((match_count < 1) and (sample_split[ind:ind+sublist_len]==sublist) and 
                     (label_list[ind:ind+sublist_len] == ['other'] * sublist_len)):
                     label_list[ind:ind+sublist_len] = [col] * sublist_len
                     match_count = 1
-    return label_list
+    return label_list, sampled_raw
     
 def subword_labeler(log_list, label_list):
     """
@@ -242,12 +268,13 @@ def pad(l, content, width):
 
 
 def main():
-    print("Begin Data Labeling and Preprocessing")
-    train_dataloader, val_dataloader, label2idx = data_preprocessing(args.training_data)
-    print("Begin Model Training")
-    model = train_model(args.model_dir, args.output_dir, train_dataloader, label2idx)
-    print("Begin Model Evaluation")
-    model_eval(model, val_dataloader, label2idx)
+    print("Data Labeling and Preprocessing...")
+    train_dataloader, val_dataloader, idx2label = data_preprocessing(args.training_data)
+    print("Model Training...")
+    model = train_model(args.model_dir, train_dataloader)
+    save_model(model, idx2label, args.output_dir)
+    print("Model Evaluation...")
+    model_eval(model, val_dataloader, idx2label)
     
 
 if __name__ == "__main__":
