@@ -37,7 +37,6 @@ import pandas as pd
 import numpy as np
 import cupy
 
-
 def data_preprocessing(training_data):
     #loading csv with header
     logs_df = cudf.read_csv(training_data)
@@ -80,7 +79,7 @@ def data_preprocessing(training_data):
     
     # use pytorch random_split to create training and validation data subsets
     dataset_size = len(input_ids)
-    training_dataset, validation_dataset = random_split(dataset, (int(dataset_size*.8), int(dataset_size*.2)))
+    training_dataset, validation_dataset = random_split(dataset, (int(dataset_size*.8), (1-int(dataset_size*.8))))
     
     # create dataloader
     train_dataloader = DataLoader(dataset=training_dataset, shuffle=True, batch_size=32)
@@ -112,7 +111,7 @@ def train_model(model_dir, train_dataloader):
     # using 3 epochs to avoid overfitting
     epochs = 3
     max_grad_norm = 1.0
-
+    
     for _ in trange(epochs, desc="Epoch"):
         # TRAIN loop
         model.train()
@@ -143,14 +142,13 @@ def save_model(model, idx2label, output_dir):
     model.config.label2id = ({v: k for k, v in model.config.id2label.items()})
     model.save_pretrained(output_dir)
     
-
 def model_eval(model, val_dataloader, idx2label):
-
+    
     eval_loss, eval_accuracy = 0, 0
     nb_eval_steps, nb_eval_examples = 0, 0
     y_true = []
     y_pred = []
-
+    
     for step, batch in enumerate(val_dataloader):
         input_ids, input_mask, label_ids = batch
         
@@ -188,7 +186,7 @@ def model_eval(model, val_dataloader, idx2label):
                     break      
             y_true.append(temp_1)
             y_pred.append(temp_2)
-
+            
     print("f1 score: %f"%(f1_score(y_true, y_pred)))
     print("Accuracy score: %f"%(accuracy_score(y_true, y_pred)))
 
@@ -276,7 +274,6 @@ def main():
     print("Model Evaluation...")
     model_eval(model, val_dataloader, idx2label)
     
-
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description=__doc__)
   parser.add_argument("--training-data", required=True,
