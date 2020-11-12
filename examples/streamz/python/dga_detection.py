@@ -38,7 +38,7 @@ def inference(messages):
         print("ERROR: Unknown type encountered in inference")
         
     result_size = gdf.shape[0]
-    gdf['url'] = gdf.stream.str.extract('"dns":.*."url": "([a-zA-Z\.\-\:\/\-0-9]+)')
+    gdf['url'] = gdf.stream.str.extract('query:\s([a-zA-Z\.\-\:\/\-0-9]+)')
     dns_extracted_gdf = dns.parse_url(gdf['url'], req_cols={"domain", "suffix"})
     domain_series = dns_extracted_gdf['domain']+'.'+dns_extracted_gdf['suffix']
     
