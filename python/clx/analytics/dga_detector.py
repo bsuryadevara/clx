@@ -113,8 +113,8 @@ class DGADetector(Detector):
         Examples
         --------
         >>> dd.predict(['nvidia.com', 'dgadomain'])
-        0    0
-        1    1
+        0    0.010
+        1    0.924
         Name: dga_probability, dtype: decimal
         """
         df = cudf.DataFrame({"domain": domains})
