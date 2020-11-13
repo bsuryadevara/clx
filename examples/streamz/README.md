@@ -97,7 +97,7 @@ To capture benchmarks add the benchmark flag along with average log size (kb), f
 ```
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/cybert.py \
-    --kafka_config <kakfka configuration filepath> \
+    --kafka_config $CLX_STREAMZ_HOME/resources/cybert.yaml \
     --group_id streamz \
     --model $CLX_STREAMZ_HOME/ml/models/cybert/pytorch_model.bin \
     --label_map $CLX_STREAMZ_HOME/ml/models/cybert/config.json \
