@@ -15,7 +15,7 @@
 import time
 import argparse
 import yaml
-import confluent_kafka as ck
+import dask
 from distributed import Client
 from dask_cuda import LocalCUDACluster
 
@@ -28,8 +28,9 @@ def create_dask_client():
     return client
 
 
-def kafka_sink(producer_conf, output_topic, parsed_df):
-    producer = ck.Producer(producer_conf)
+def kafka_sink(output_topic, parsed_df):
+    worker = dask.distributed.get_worker()
+    producer = worker.data["producer"]
     json_str = parsed_df.to_json(orient="records", lines=True)
     json_recs = json_str.split("\n")
     for json_rec in json_recs:

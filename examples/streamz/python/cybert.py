@@ -49,8 +49,7 @@ def inference(messages):
 
 def sink_to_kafka(processed_data):
     # Parsed data and confidence scores will be published to provided kafka producer
-    utils.kafka_sink(kafka_config['producer_conf'], 
-                     kafka_config['output_topic'], 
+    utils.kafka_sink(kafka_config['output_topic'], 
                      processed_data[0])
     return processed_data
 
@@ -74,7 +73,8 @@ def signal_term_handler(signal, frame):
 def worker_init():
     # Initialization for each dask worker
     from clx.analytics.cybert import Cybert
-
+    import confluent_kafka as ck
+    
     worker = dask.distributed.get_worker()
     cy = Cybert()
     print(
@@ -87,13 +87,15 @@ def worker_init():
     )
     cy.load_local_model(args.model)
     worker.data["cybert"] = cy
+    producer = ck.Producer(kafka_config['producer_conf'])
+    worker.data["producer"] = producer
     print("Successfully initialized dask worker " + str(worker))
 
 
 def start_stream():
     source = Stream.from_kafka_batched(
         kafka_config['input_topic'],
-        consumer_conf,
+        kafka_config['consumer_conf'],
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
         npartitions=1,
@@ -120,7 +122,7 @@ def start_stream():
 if __name__ == "__main__":
     # Parse arguments
     args = utils.parse_arguments()
-    kafka_config = utils.load_yaml(args['kafka_config'])
+    kafka_config = utils.load_yaml(args.kafka_config)
     
     # Handle script exit
     signal.signal(signal.SIGTERM, signal_term_handler)
@@ -138,4 +140,7 @@ if __name__ == "__main__":
     try:
         loop.start()
     except KeyboardInterrupt:
+        worker = dask.distributed.get_worker()
+        producer = worker.data["producer"]
+        producer.close()
         loop.stop()

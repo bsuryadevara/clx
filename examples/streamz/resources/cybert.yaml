@@ -3,11 +3,21 @@ output_topic: cybert_output
 producer_conf:
   bootstrap.servers: localhost:9092
   session.timeout.ms: '10000'
-  # queue.buffering.max.messages: '250000'
-  # linger.ms: '100'
+  #queue.buffering.max.messages: '250000'
+  #linger.ms: '100'
+  #security.protocol: SASL_SSL
+  #sasl.mechanism: PLAIN
+  #ssl.ca.location: /opt/nvidia/BBYCA.pem
+  #sasl.username: admin
+  #sasl.password: <your password>
 consumer_conf:
   bootstrap.servers: localhost:9092
   group.id: streamz
   session.timeout.ms: '60000'
   enable.partition.eof: 'true'
   auto.offset.reset: earliest
+  #security.protocol: SASL_SSL
+  #sasl.mechanism: PLAIN
+  #ssl.ca.location: /opt/nvidia/BBYCA.pem
+  #sasl.username: admin
+  #sasl.password: <your password>

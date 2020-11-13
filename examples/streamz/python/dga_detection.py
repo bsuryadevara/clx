@@ -39,9 +39,10 @@ def inference(messages):
         
     result_size = gdf.shape[0]
     gdf['url'] = gdf.stream.str.extract('query:\s([a-zA-Z\.\-\:\/\-0-9]+)')
+    gdf['url'] = gdf.url.str.lower()
     extracted_gdf = dns.parse_url(gdf['url'], req_cols={"domain", "suffix"})
-    domain_series = extracted_gdf['domain']+'.'+extracted_gdf['suffix']
-    print("Processing batch size: " + str(result_size))
+    domain_series = extracted_gdf['domain'] +'.'+extracted_gdf['suffix']
+    domain_series = domain_series.fillna(" ")
     dd = worker.data["dga_detector"]
     preds = dd.predict(domain_series)
     gdf["dga_probability"] = preds
@@ -52,8 +53,7 @@ def inference(messages):
 
 def sink_to_kafka(processed_data):
     # Prediction data will be published to provided kafka producer
-    utils.kafka_sink(kafka_config['producer_conf'], 
-                     kafka_config['output_topic'], 
+    utils.kafka_sink(kafka_config['output_topic'], 
                      processed_data[0])
     return processed_data
 
@@ -61,7 +61,8 @@ def sink_to_kafka(processed_data):
 def worker_init():
     # Initialization for each dask worker
     from clx.analytics.dga_detector import DGADetector
-
+    import confluent_kafka as ck
+    
     worker = dask.distributed.get_worker()
     dd = DGADetector()
     print(
@@ -72,9 +73,11 @@ def worker_init():
     )
     dd.load_model(args.model)
     worker.data["dga_detector"] = dd
+    
+    producer = ck.Producer(kafka_config['producer_conf'])
+    worker.data["producer"] = producer
     print("Successfully initialized dask worker " + str(worker))
-
-
+    
 def signal_term_handler(signal, frame):
     # Receives signal and calculates benchmark if indicated in argument
     print("Exiting streamz script...")
@@ -96,7 +99,7 @@ def start_stream():
     # note: currently cudf engine supports only flatten json message format.
     source = Stream.from_kafka_batched(
         kafka_config['input_topic'],
-        consumer_conf,
+        kafka_config['consumer_conf'],
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
         npartitions=6,
@@ -124,7 +127,7 @@ def start_stream():
 if __name__ == "__main__":
     # Parse arguments
     args = utils.parse_arguments()
-    kafka_config = utils.load_yaml(args['kafka_config'])
+    kafka_config = utils.load_yaml(args.kafka_config)
     # Handle script exit
     signal.signal(signal.SIGTERM, signal_term_handler)
     signal.signal(signal.SIGINT, signal_term_handler)
@@ -141,4 +144,7 @@ if __name__ == "__main__":
     try:
         loop.start()
     except KeyboardInterrupt:
+        worker = dask.distributed.get_worker()
+        producer = worker.data["producer"]
+        producer.close()
         loop.stop()
