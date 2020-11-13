@@ -79,8 +79,9 @@ def data_preprocessing(training_data):
     
     # use pytorch random_split to create training and validation data subsets
     dataset_size = len(input_ids)
-    training_dataset, validation_dataset = random_split(dataset, (int(dataset_size*.8), (1-int(dataset_size*.8))))
-    
+    train_size = int(dataset_size * .8)
+    training_dataset, validation_dataset = random_split(dataset, (train_size, (dataset_size-train_size)))
+
     # create dataloader
     train_dataloader = DataLoader(dataset=training_dataset, shuffle=True, batch_size=32)
     val_dataloader = DataLoader(dataset=validation_dataset, shuffle=False, batch_size=1)
