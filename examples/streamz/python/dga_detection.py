@@ -46,6 +46,7 @@ def inference(messages):
     dd = worker.data["dga_detector"]
     preds = dd.predict(domain_series)
     gdf["dga_probability"] = preds
+    gdf["processed_time"] = batch_start_time
     torch.cuda.empty_cache()
     gc.collect()
     return (gdf, batch_start_time, result_size)
