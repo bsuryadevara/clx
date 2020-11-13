@@ -62,7 +62,6 @@ Your Quickstart Docker container includes the data and models required to run cy
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/cybert.py \
     --kafka_config $CLX_STREAMZ_HOME/resources/cybert.yaml \
-    --group_id streamz \
     --model $CLX_STREAMZ_HOME/ml/cybert/models \
     --poll_interval 1s \
     --max_batch_size 500'
@@ -73,7 +72,6 @@ docker exec clx_streamz bash -c 'source activate rapids \
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/dga_detection.py \
     --kafka_config $CLX_STREAMZ_HOME/resources/dga_detection.yaml \
-    --group_id streamz \
     --model $CLX_STREAMZ_HOME/ml/models/dga/pytorch_model.bin \
     --poll_interval 1s \
     --max_batch_size 500'
@@ -98,7 +96,6 @@ To capture benchmarks add the benchmark flag along with average log size (kb), f
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/cybert.py \
     --kafka_config $CLX_STREAMZ_HOME/resources/cybert.yaml \
-    --group_id streamz \
     --model $CLX_STREAMZ_HOME/ml/models/cybert/pytorch_model.bin \
     --label_map $CLX_STREAMZ_HOME/ml/models/cybert/config.json \
     --poll_interval 1s \
