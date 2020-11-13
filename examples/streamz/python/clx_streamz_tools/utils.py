@@ -14,6 +14,7 @@
 
 import time
 import argparse
+import yaml
 import confluent_kafka as ck
 from distributed import Client
 from dask_cuda import LocalCUDACluster
@@ -55,6 +56,11 @@ def calc_benchmark(processed_data, size_per_log):
     avg_batch_size = size / (1024.0 * batch_count) if batch_count > 0 else 0
     return (time_diff, throughput_mbps, avg_batch_size)
 
+def load_yaml(yaml_file):
+    """Returns a dictionary of a configuration contained in the given yaml file"""
+    with open(yaml_file) as yaml_file:
+        config_dict = yaml.safe_load(yaml_file)
+    return config_dict
 
 def parse_arguments():
     # Establish script arguments
@@ -63,13 +69,7 @@ def parse_arguments():
                      Data will be read from the input kafka topic, \
                      processed using clx streamz workflows."
     )
-    parser.add_argument("-b", "--broker", default="localhost:9092", help="Kafka broker")
-    parser.add_argument(
-        "-i", "--input_topic", default="input", help="Input kafka topic"
-    )
-    parser.add_argument(
-        "-o", "--output_topic", default="output", help="Output kafka topic"
-    )
+    parser.add_argument("-k", "--kafka_config", help="Kafka configuration filepath")
     parser.add_argument("-g", "--group_id", default="streamz", help="Kafka group ID")
     parser.add_argument("-m", "--model", help="Model filepath")
     parser.add_argument("-l", "--label_map", help="Label map filepath")

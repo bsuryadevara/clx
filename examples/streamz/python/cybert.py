@@ -49,8 +49,9 @@ def inference(messages):
 
 def sink_to_kafka(processed_data):
     # Parsed data and confidence scores will be published to provided kafka producer
-    parsed_df = processed_data[0]
-    utils.kafka_sink(producer_conf, args.output_topic, parsed_df)
+    utils.kafka_sink(kafka_config['producer_conf'], 
+                     kafka_config['output_topic'], 
+                     processed_data[0])
     return processed_data
 
 
@@ -91,7 +92,7 @@ def worker_init():
 
 def start_stream():
     source = Stream.from_kafka_batched(
-        args.input_topic,
+        kafka_config['input_topic'],
         consumer_conf,
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
@@ -119,7 +120,8 @@ def start_stream():
 if __name__ == "__main__":
     # Parse arguments
     args = utils.parse_arguments()
-
+    kafka_config = utils.load_yaml(args['kafka_config'])
+    
     # Handle script exit
     signal.signal(signal.SIGTERM, signal_term_handler)
     signal.signal(signal.SIGINT, signal_term_handler)
@@ -127,17 +129,8 @@ if __name__ == "__main__":
     client = utils.create_dask_client()
     client.run(worker_init)
 
-    producer_conf = {"bootstrap.servers": args.broker, "session.timeout.ms": "10000"}
-    consumer_conf = {
-        "bootstrap.servers": args.broker,
-        "group.id": args.group_id,
-        "session.timeout.ms": "60000",
-        "enable.partition.eof": "true",
-        "auto.offset.reset": "earliest",
-    }
-
-    print("Producer conf: " + str(producer_conf))
-    print("Consumer conf: " + str(consumer_conf))
+    print("Producer conf: " + str(kafka_config['producer_conf']))
+    print("Consumer conf: " + str(kafka_config['consumer_conf']))
     
     loop = ioloop.IOLoop.current()
     loop.add_callback(start_stream)

@@ -1,0 +1,13 @@
+input_topic: dga_detection_input
+output_topic: dga_detection_output
+producer_conf:
+  bootstrap.servers: localhost:9092
+  session.timeout.ms: '10000'
+  # queue.buffering.max.messages: '250000'
+  # linger.ms: '100'
+consumer_conf:
+  bootstrap.servers: localhost:9092
+  group.id: streamz
+  session.timeout.ms: '60000'
+  enable.partition.eof: 'true'
+  auto.offset.reset: earliest

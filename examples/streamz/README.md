@@ -61,12 +61,9 @@ Your Quickstart Docker container includes the data and models required to run cy
 ```
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/cybert.py \
-    --broker localhost:9092 \
-    --input_topic cybert_input \
-    --output_topic cybert_output \
+    --kafka_config $CLX_STREAMZ_HOME/resources/cybert.yaml \
     --group_id streamz \
-    --model $CLX_STREAMZ_HOME/ml/models/cybert/pytorch_model.bin \
-    --label_map $CLX_STREAMZ_HOME/ml/models/cybert/config.json \
+    --model $CLX_STREAMZ_HOME/ml/cybert/models \
     --poll_interval 1s \
     --max_batch_size 500'
 ```
@@ -75,9 +72,7 @@ docker exec clx_streamz bash -c 'source activate rapids \
 ```
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/dga_detection.py \
-    --broker localhost:9092 \
-    --input_topic dga_detection_input \
-    --output_topic dga_detection_output \
+    --kafka_config $CLX_STREAMZ_HOME/resources/dga_detection.yaml \
     --group_id streamz \
     --model $CLX_STREAMZ_HOME/ml/models/dga/pytorch_model.bin \
     --poll_interval 1s \
@@ -102,9 +97,7 @@ To capture benchmarks add the benchmark flag along with average log size (kb), f
 ```
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/cybert.py \
-    --broker localhost:9092 \
-    --input_topic cybert_input \
-    --output_topic cybert_output \
+    --kafka_config <kakfka configuration filepath> \
     --group_id streamz \
     --model $CLX_STREAMZ_HOME/ml/models/cybert/pytorch_model.bin \
     --label_map $CLX_STREAMZ_HOME/ml/models/cybert/config.json \
@@ -141,9 +134,7 @@ $ less cybert_workflow.log
     ```
     docker exec clx_streamz bash -c 'source activate rapids \
         && python $CLX_STREAMZ_HOME/python/<workflow_script> \
-        --broker <host:port> \
-        --input_topic <input_topic> \
-        --output_topic <output_topic> \
+        --kafka_config <kakfka configuration filepath> \
         --group_id <kafka_consumer_group_id> \
         --model <model filepath> \
         --label_map <labels filepath> \
@@ -152,10 +143,9 @@ $ less cybert_workflow.log
         --benchmark <avg log size>'
     ```
     **Parameters:**
+    - `kafka_config` - Kafka consumer and producer configuration file path.
     - `broker`* - Host and port where kafka broker is running. 
     - `group_id`* - Kafka [group id](https://docs.confluent.io/current/installation/configuration/consumer-configs.html#group.id) that uniquely identifies the streamz data consumer.
-    - `input_topic` - The name for the input topic to consumer data.
-    - `output_topic` - The name for the output topic to send the output data.
     - `model_file` - The path to your model file
     - `label_file` - The path to your label file
     - `poll_interval`* - Interval (in seconds) to poll the Kafka input topic for data (Ex: 60s)
