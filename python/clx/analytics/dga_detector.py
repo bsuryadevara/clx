@@ -115,7 +115,7 @@ class DGADetector(Detector):
         >>> dd.predict(['nvidia.com', 'dgadomain'])
         0    0
         1    1
-        Name: is_dga, dtype: int64
+        Name: dga_probability, dtype: decimal
         """
         df = cudf.DataFrame({"domain": domains})
         domains_len = df["domain"].count()
