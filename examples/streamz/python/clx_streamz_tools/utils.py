@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ast
+import json
 import time
 import argparse
 import yaml
@@ -47,9 +47,9 @@ def es_sink(config, parsed_df):
     parsed_df['_id'] = parsed_df['_id'].astype('int64')
     parsed_df["_index"] = config["index"]
     json_str = parsed_df.to_json(orient="records")
-    docs = ast.literal_eval(json_str)
+    docs = json.loads(json_str)
     helpers.bulk(es, docs)
-    
+
 def calc_benchmark(processed_data, size_per_log):
     # Calculates benchmark for the streamz workflow
     t1 = int(round(time.time() * 1000))
