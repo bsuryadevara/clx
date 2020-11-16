@@ -1,6 +1,6 @@
 kafka_conf:
-   input_topic: dga_detection_input
-   output_topic: dga_detection_output
+   input_topic: dns_input
+   output_topic: dns_output
    producer_conf:
      bootstrap.servers: localhost:9092
      session.timeout.ms: '10000'
@@ -13,7 +13,7 @@ kafka_conf:
      #sasl.password: <your password>
    consumer_conf:
      bootstrap.servers: localhost:9092
-     group.id: streamz
+     group.id: streamz_v3
      session.timeout.ms: '60000'
      enable.partition.eof: 'true'
      auto.offset.reset: earliest
@@ -25,5 +25,5 @@ kafka_conf:
 elasticsearch_conf:
    host: localhost
    port: 9200
-   _index: info_blox_dns
-sink: elasticsearch 
+   index: dns-logs
+sink: elasticsearch

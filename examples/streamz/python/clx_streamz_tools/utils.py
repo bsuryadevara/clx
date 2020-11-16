@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ast
 import time
 import argparse
 import yaml
@@ -44,9 +45,9 @@ def es_sink(config, parsed_df):
     es = worker.data["sink"]
     parsed_df["_id"] = random.getrandbits(40) + parsed_df.index
     parsed_df['_id'] = parsed_df['_id'].astype('int64')
-    parsed_df["_index"] = config["_index"]
-    json_str = parsed_df.to_json(orient="records", lines=True)
-    docs = json_str.split("\n")
+    parsed_df["_index"] = config["index"]
+    json_str = parsed_df.to_json(orient="records")
+    docs = ast.literal_eval(json_str)
     helpers.bulk(es, docs)
     
 def calc_benchmark(processed_data, size_per_log):
@@ -82,7 +83,7 @@ def parse_arguments():
                      Data will be read from the input kafka topic, \
                      processed using clx streamz workflows."
     )
-    parser.add_argument("-k", "--kafka_config", help="Kafka configuration filepath")
+    parser.add_argument("-c", "--conf", help="Source and Sink configuration filepath")
     parser.add_argument("-g", "--group_id", default="streamz", help="Kafka group ID")
     parser.add_argument("-m", "--model", help="Model filepath")
     parser.add_argument("-l", "--label_map", help="Label map filepath")

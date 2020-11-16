@@ -152,7 +152,7 @@ def start_stream():
 if __name__ == "__main__":
     # Parse arguments
     args = utils.parse_arguments()
-    config = utils.load_yaml(args.config)
+    config = utils.load_yaml(args.conf)
     kafka_conf = config["kafka_conf"]
     sink_dict = {"kafka": sink_to_kafka, "elasticsearch": sink_to_es}
     # Handle script exit
@@ -177,3 +177,4 @@ if __name__ == "__main__":
         else:
             sink.transport.close()
         loop.stop()
+        

@@ -48,9 +48,14 @@ def inference(messages):
 
 
 def sink_to_kafka(processed_data):
-    # Parsed data and confidence scores will be published to provided kafka producer
-    utils.kafka_sink(kafka_config['output_topic'], 
-                     processed_data[0])
+    # Prediction data will be published to provided Kafka producer
+    utils.kafka_sink(kafka_conf["output_topic"], processed_data[0])
+    return processed_data
+
+
+def sink_to_es(processed_data):
+    # Prediction data will be published to ElasticSearch cluster
+    utils.es_sink(config["elasticsearch_conf"], processed_data[0])
     return processed_data
 
 
@@ -87,15 +92,32 @@ def worker_init():
     )
     cy.load_local_model(args.model)
     worker.data["cybert"] = cy
-    producer = ck.Producer(kafka_config['producer_conf'])
-    worker.data["producer"] = producer
+    if config["sink"] == "kafka":
+        import confluent_kafka as ck
+
+        print("Producer conf: " + str(kafka_conf["producer_conf"]))
+        producer = ck.Producer(kafka_conf["producer_conf"])
+        worker.data["sink"] = producer
+    elif config["sink"] == "elasticsearch":
+        from elasticsearch import Elasticsearch
+
+        es = Elasticsearch(
+            [{"host": config["elasticsearch_conf"]["host"]}],
+            port=config["elasticsearch_conf"]["port"],
+        )
+        worker.data["sink"] = es
+    else:
+        print(
+            "No valid sink provided in the configuration file. Please provide kafka/elasticsearch"
+        )
+        sys.exit(-1)
     print("Successfully initialized dask worker " + str(worker))
 
 
 def start_stream():
     source = Stream.from_kafka_batched(
-        kafka_config['input_topic'],
-        kafka_config['consumer_conf'],
+        kafka_conf["input_topic"],
+        kafka_conf["consumer_conf"],
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
         npartitions=1,
@@ -103,6 +125,7 @@ def start_stream():
         dask=True,
         max_batch_size=args.max_batch_size,
     )
+    sink = config["sink"]
     global output
     # If benchmark arg is True, use streamz to compute benchmark
     if args.benchmark:
@@ -110,19 +133,21 @@ def start_stream():
         output = (
             source.map(inference)
             .map(lambda x: (x[0], x[1], int(round(time.time())), x[2]))
-            .map(sink_to_kafka)
+            .map(sink_dict[sink])
             .gather()
             .sink_to_list()
         )
     else:
-        output = source.map(inference).map(sink_to_kafka).gather()
+        output = source.map(inference).map(sink_dict[sink]).gather()
 
     source.start()
     
 if __name__ == "__main__":
     # Parse arguments
     args = utils.parse_arguments()
-    kafka_config = utils.load_yaml(args.kafka_config)
+    config = utils.load_yaml(args.conf)
+    kafka_conf = config["kafka_conf"]
+    sink_dict = {"kafka": sink_to_kafka, "elasticsearch": sink_to_es}
     
     # Handle script exit
     signal.signal(signal.SIGTERM, signal_term_handler)
@@ -131,8 +156,7 @@ if __name__ == "__main__":
     client = utils.create_dask_client()
     client.run(worker_init)
 
-    print("Producer conf: " + str(kafka_config['producer_conf']))
-    print("Consumer conf: " + str(kafka_config['consumer_conf']))
+    print("Consumer conf: " + str(kafka_conf["consumer_conf"]))
     
     loop = ioloop.IOLoop.current()
     loop.add_callback(start_stream)
@@ -141,6 +165,9 @@ if __name__ == "__main__":
         loop.start()
     except KeyboardInterrupt:
         worker = dask.distributed.get_worker()
-        producer = worker.data["producer"]
-        producer.close()
+        sink = worker.data["sink"]
+        if config["sink"] == "kafka":
+            sink.close()
+        else:
+            sink.transport.close()
         loop.stop()
