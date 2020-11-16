@@ -16,7 +16,9 @@ import time
 import argparse
 import yaml
 import dask
+import random
 from distributed import Client
+from elasticsearch import helpers
 from dask_cuda import LocalCUDACluster
 
 
@@ -30,13 +32,23 @@ def create_dask_client():
 
 def kafka_sink(output_topic, parsed_df):
     worker = dask.distributed.get_worker()
-    producer = worker.data["producer"]
+    producer = worker.data["sink"]
     json_str = parsed_df.to_json(orient="records", lines=True)
     json_recs = json_str.split("\n")
     for json_rec in json_recs:
         producer.produce(output_topic, json_rec)
     producer.flush()
 
+def es_sink(config, parsed_df):
+    worker = dask.distributed.get_worker()
+    es = worker.data["sink"]
+    parsed_df["_id"] = random.getrandbits(40) + parsed_df.index
+    parsed_df['_id'] = parsed_df['_id'].astype('int64')
+    parsed_df["_index"] = config["_index"]
+    json_str = parsed_df.to_json(orient="records", lines=True)
+    docs = json_str.split("\n")
+    helpers.bulk(es, docs)
+    
 def calc_benchmark(processed_data, size_per_log):
     # Calculates benchmark for the streamz workflow
     t1 = int(round(time.time() * 1000))

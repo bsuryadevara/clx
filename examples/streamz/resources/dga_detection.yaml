@@ -1,23 +1,29 @@
-input_topic: dga_detection_input
-output_topic: dga_detection_output
-producer_conf:
-  bootstrap.servers: localhost:9092
-  session.timeout.ms: '10000'
-  #queue.buffering.max.messages: '250000'
-  #linger.ms: '100'
-  #security.protocol: SASL_SSL
-  #sasl.mechanism: PLAIN
-  #ssl.ca.location: /opt/nvidia/BBYCA.pem
-  #sasl.username: admin
-  #sasl.password: <your password>
-consumer_conf:
-  bootstrap.servers: localhost:9092
-  group.id: streamz
-  session.timeout.ms: '60000'
-  enable.partition.eof: 'true'
-  auto.offset.reset: earliest
-  #security.protocol: SASL_SSL
-  #sasl.mechanism: PLAIN
-  #ssl.ca.location: /opt/nvidia/BBYCA.pem
-  #sasl.username: admin
-  #sasl.password: <your password>
+kafka_conf:
+   input_topic: dga_detection_input
+   output_topic: dga_detection_output
+   producer_conf:
+     bootstrap.servers: localhost:9092
+     session.timeout.ms: '10000'
+     #queue.buffering.max.messages: '250000'
+     #linger.ms: '100'
+     #security.protocol: SASL_SSL
+     #sasl.mechanism: PLAIN
+     #ssl.ca.location: /opt/nvidia/BBYCA.pem
+     #sasl.username: admin
+     #sasl.password: <your password>
+   consumer_conf:
+     bootstrap.servers: localhost:9092
+     group.id: streamz
+     session.timeout.ms: '60000'
+     enable.partition.eof: 'true'
+     auto.offset.reset: earliest
+     #security.protocol: SASL_SSL
+     #sasl.mechanism: PLAIN
+     #ssl.ca.location: /opt/nvidia/BBYCA.pem
+     #sasl.username: admin
+     #sasl.password: <your password>
+elasticsearch_conf:
+   host: localhost
+   port: 9200
+   _index: info_blox_dns
+sink: elasticsearch 
