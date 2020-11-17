@@ -90,6 +90,6 @@ VOLUME /opt/nvidia
 
 USER gtxadmin
 
-ENTRYPOINT ["/usr/bin/tini", "--", "bash", "/opt/clx_streamz/scripts/entrypoint.sh"]
+# ENTRYPOINT ["/usr/bin/tini", "--", "bash", "/opt/clx_streamz/scripts/entrypoint.sh"]
 
-CMD [ "/bin/bash" ]
+# CMD [ "/bin/bash" ]

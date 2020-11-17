@@ -18,6 +18,7 @@ import argparse
 import yaml
 import dask
 import random
+from collections import deque
 from distributed import Client
 from elasticsearch import helpers
 from dask_cuda import LocalCUDACluster
@@ -52,6 +53,7 @@ def es_sink(config, parsed_df):
                                chunk_size=15000, 
                                thread_count=16, 
                                queue_size=16)
+    deque(pb, maxlen = 0)
 
 def calc_benchmark(processed_data, size_per_log):
     # Calculates benchmark for the streamz workflow
