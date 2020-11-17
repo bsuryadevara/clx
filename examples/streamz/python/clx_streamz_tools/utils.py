@@ -48,7 +48,10 @@ def es_sink(config, parsed_df):
     parsed_df["_index"] = config["index"]
     json_str = parsed_df.to_json(orient="records")
     docs = json.loads(json_str)
-    helpers.bulk(es, docs)
+    pb = helpers.parallel_bulk(es, docs, 
+                               chunk_size=15000, 
+                               thread_count=16, 
+                               queue_size=16)
 
 def calc_benchmark(processed_data, size_per_log):
     # Calculates benchmark for the streamz workflow
