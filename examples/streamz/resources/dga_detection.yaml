@@ -13,7 +13,7 @@ kafka_conf:
      #sasl.password: <your password>
    consumer_conf:
      bootstrap.servers: localhost:9092
-     group.id: streamz_v3
+     group.id: streamz
      session.timeout.ms: '60000'
      enable.partition.eof: 'true'
      auto.offset.reset: earliest

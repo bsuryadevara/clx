@@ -14,10 +14,10 @@
 
 import json
 import time
-import argparse
 import yaml
 import dask
 import random
+import argparse
 from collections import deque
 from distributed import Client
 from elasticsearch import helpers
@@ -41,20 +41,37 @@ def kafka_sink(output_topic, parsed_df):
         producer.produce(output_topic, json_rec)
     producer.flush()
 
+# async def streaming_bulk(docs, es):
+#     async for ok, result in helpers.async_streaming_bulk(es, docs):
+#                 action, result = result.popitem()
+#                 if not ok:
+#                     print("failed to %s document %s" % ())
+
+# async def upload(chunks):
+#     tasks = []
+#     worker = dask.distributed.get_worker()
+#     es = worker.data["sink"]
+#     for chunk in chunks:
+#         tasks.append(asyncio.ensure_future(streaming_bulk(chunk, es)))
+#     await asyncio.gather(*tasks)
+    
 def es_sink(config, parsed_df):
     worker = dask.distributed.get_worker()
-    es = worker.data["sink"]
+    es_client = worker.data["sink"]
     parsed_df["_id"] = random.getrandbits(40) + parsed_df.index
     parsed_df['_id'] = parsed_df['_id'].astype('int64')
     parsed_df["_index"] = config["index"]
     json_str = parsed_df.to_json(orient="records")
     docs = json.loads(json_str)
-    pb = helpers.parallel_bulk(es, docs, 
-                               chunk_size=15000, 
-                               thread_count=16, 
-                               queue_size=16)
+    pb = helpers.parallel_bulk(es_client, docs, 
+                               chunk_size=10000, 
+                               thread_count=10, 
+                               queue_size=10)
     deque(pb, maxlen = 0)
-
+#     chunks = [docs[x:x+10000] for x in range(0, len(docs), 10000)]
+#     loop = asyncio.get_event_loop()
+#     loop.run_until_complete(upload(chunks))
+    
 def calc_benchmark(processed_data, size_per_log):
     # Calculates benchmark for the streamz workflow
     t1 = int(round(time.time() * 1000))

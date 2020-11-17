@@ -88,12 +88,14 @@ def worker_init():
         worker.data["sink"] = producer
     elif config["sink"] == "elasticsearch":
         from elasticsearch import Elasticsearch
-
-        es = Elasticsearch(
+#         from elasticsearch import AsyncElasticsearch
+#         
+#         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
+        es_client = Elasticsearch(
             [{"host": config["elasticsearch_conf"]["host"]}],
             port=config["elasticsearch_conf"]["port"],
         )
-        worker.data["sink"] = es
+        worker.data["sink"] = es_client
     else:
         print(
             "No valid sink provided in the configuration file. Please provide kafka/elasticsearch"
