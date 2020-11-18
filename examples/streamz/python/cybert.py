@@ -25,21 +25,14 @@ from tornado import ioloop
 from clx_streamz_tools import utils
 
 
-def inference(messages):
+def inference(gdf):
     # Messages will be received and run through cyBERT inferencing
     worker = dask.distributed.get_worker()
     batch_start_time = int(round(time.time()))
-    df = cudf.DataFrame()
-    if type(messages) == str:
-        df["stream"] = [messages.decode("utf-8")]
-    elif type(messages) == list and len(messages) > 0:
-        df["stream"] = [msg.decode("utf-8") for msg in messages]
-    else:
-        print("ERROR: Unknown type encountered in inference")
-    
-    result_size = df.shape[0]
+    result_size = gdf.shape[0]
+    gdf = gdf[["message"]]
     print("Processing batch size: " + str(result_size))
-    parsed_df, confidence_df = worker.data["cybert"].inference(df["stream"])
+    parsed_df, confidence_df = worker.data["cybert"].inference(gdf["message"])
     confidence_df = confidence_df.add_suffix("_confidence")
     parsed_df = pd.concat([parsed_df, confidence_df], axis=1)
     torch.cuda.empty_cache()
@@ -79,7 +72,7 @@ def worker_init():
     # Initialization for each dask worker
     from clx.analytics.cybert import Cybert
     import confluent_kafka as ck
-    
+
     worker = dask.distributed.get_worker()
     cy = Cybert()
     print(
@@ -101,11 +94,23 @@ def worker_init():
     elif config["sink"] == "elasticsearch":
         from elasticsearch import Elasticsearch
 
-        es = Elasticsearch(
-            [{"host": config["elasticsearch_conf"]["host"]}],
-            port=config["elasticsearch_conf"]["port"],
-        )
-        worker.data["sink"] = es
+        #         from elasticsearch import AsyncElasticsearch
+        #
+        #         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
+        es_conf = config["elasticsearch_conf"]
+
+        #         from ssl import create_default_context
+        #
+        #
+        #         context = create_default_context(cafile=es_conf["cafile"])
+        #         es_client = Elasticsearch(
+        #             es_conf["host"].split(','),
+        #             http_auth=(es_conf['username'], es_conf['password']),
+        #             scheme="https",
+        #             port=es_conf["port"],
+        #             ssl_context=context,
+        #         )
+        es_client = Elasticsearch(es_conf["hosts"].split(","), port=es_conf["port"])
     else:
         print(
             "No valid sink provided in the configuration file. Please provide kafka/elasticsearch"
@@ -120,9 +125,10 @@ def start_stream():
         kafka_conf["consumer_conf"],
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
-        npartitions=kafka_conf['n_partitions'],
+        npartitions=kafka_conf["n_partitions"],
         asynchronous=True,
         dask=True,
+        engine="cudf",
         max_batch_size=args.max_batch_size,
     )
     sink = config["sink"]
@@ -141,14 +147,15 @@ def start_stream():
         output = source.map(inference).map(sink_dict[sink]).gather()
 
     source.start()
-    
+
+
 if __name__ == "__main__":
     # Parse arguments
     args = utils.parse_arguments()
     config = utils.load_yaml(args.conf)
     kafka_conf = config["kafka_conf"]
     sink_dict = {"kafka": sink_to_kafka, "elasticsearch": sink_to_es}
-    
+
     # Handle script exit
     signal.signal(signal.SIGTERM, signal_term_handler)
     signal.signal(signal.SIGINT, signal_term_handler)
@@ -157,10 +164,10 @@ if __name__ == "__main__":
     client.run(worker_init)
 
     print("Consumer conf: " + str(kafka_conf["consumer_conf"]))
-    
+
     loop = ioloop.IOLoop.current()
     loop.add_callback(start_stream)
-    
+
     try:
         loop.start()
     except KeyboardInterrupt:

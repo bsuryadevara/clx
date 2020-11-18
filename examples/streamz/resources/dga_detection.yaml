@@ -24,7 +24,10 @@ kafka_conf:
      #sasl.username: admin
      #sasl.password: <your password>
 elasticsearch_conf:
-   host: localhost
+   hosts: localhost,host2
    port: 9200
+   #cafile: /opt/nvidia/BBYCA.pem
+   #user: username
+   #secret: <your password>
    index: dns-logs
 sink: elasticsearch

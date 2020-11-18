@@ -30,6 +30,7 @@ def inference(gdf):
     worker = dask.distributed.get_worker()
     batch_start_time = int(round(time.time()))
     result_size = gdf.shape[0]
+    gdf = gdf[["message"]]
     gdf["url"] = gdf.message.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
     gdf["url"] = gdf.url.str.lower()
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
@@ -79,13 +80,24 @@ def worker_init():
         worker.data["sink"] = producer
     elif config["sink"] == "elasticsearch":
         from elasticsearch import Elasticsearch
-#         from elasticsearch import AsyncElasticsearch
-#         
-#         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
-        es_client = Elasticsearch(
-            [{"host": config["elasticsearch_conf"]["host"]}],
-            port=config["elasticsearch_conf"]["port"],
-        )
+
+        es_conf = config["elasticsearch_conf"]
+        #         from elasticsearch import AsyncElasticsearch
+        #
+        #         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
+
+        #         from ssl import create_default_context
+        #
+        #
+        #         context = create_default_context(cafile=es_conf["ca_file"])
+        #         es_client = Elasticsearch(
+        #             es_conf["hosts"].split(','),
+        #             http_auth=(es_conf['username'], es_conf['password']),
+        #             scheme="https",
+        #             port=es_conf["port"],
+        #             ssl_context=context,
+        #         )
+        es_client = Elasticsearch(es_conf["hosts"].split(","), port=es_conf["port"])
         worker.data["sink"] = es_client
     else:
         print(
@@ -119,7 +131,7 @@ def start_stream():
         kafka_conf["consumer_conf"],
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
-        npartitions=kafka_conf['n_partitions'],
+        npartitions=kafka_conf["n_partitions"],
         asynchronous=True,
         dask=True,
         engine="cudf",
@@ -171,4 +183,3 @@ if __name__ == "__main__":
         else:
             sink.transport.close()
         loop.stop()
-        
