@@ -120,7 +120,7 @@ def start_stream():
         kafka_conf["consumer_conf"],
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
-        npartitions=1,
+        npartitions=kafka_conf['n_partitions'],
         asynchronous=True,
         dask=True,
         max_batch_size=args.max_batch_size,

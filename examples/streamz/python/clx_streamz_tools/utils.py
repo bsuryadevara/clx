@@ -16,7 +16,6 @@ import json
 import time
 import yaml
 import dask
-import random
 import argparse
 from collections import deque
 from distributed import Client
@@ -58,8 +57,6 @@ def kafka_sink(output_topic, parsed_df):
 def es_sink(config, parsed_df):
     worker = dask.distributed.get_worker()
     es_client = worker.data["sink"]
-    parsed_df["_id"] = random.getrandbits(40) + parsed_df.index
-    parsed_df['_id'] = parsed_df['_id'].astype('int64')
     parsed_df["_index"] = config["index"]
     json_str = parsed_df.to_json(orient="records")
     docs = json.loads(json_str)

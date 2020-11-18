@@ -25,21 +25,12 @@ from clx_streamz_tools import utils
 from clx.dns import dns_extractor as dns
 
 
-def inference(messages):
+def inference(gdf):
     # Messages will be received and run through DGA inferencing
     worker = dask.distributed.get_worker()
     batch_start_time = int(round(time.time()))
-    gdf = cudf.DataFrame()
-
-    if type(messages) == str:
-        gdf["stream"] = [messages.decode("utf-8")]
-    elif type(messages) == list and len(messages) > 0:
-        gdf["stream"] = [msg.decode("utf-8") for msg in messages]
-    else:
-        print("ERROR: Unknown type encountered in inference")
-
     result_size = gdf.shape[0]
-    gdf["url"] = gdf.stream.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
+    gdf["url"] = gdf.message.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
     gdf["url"] = gdf.url.str.lower()
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
     domain_series = extracted_gdf["domain"] + "." + extracted_gdf["suffix"]
@@ -128,9 +119,10 @@ def start_stream():
         kafka_conf["consumer_conf"],
         poll_interval=args.poll_interval,
         # npartitions value varies based on kafka topic partitions configuration.
-        npartitions=6,
+        npartitions=kafka_conf['n_partitions'],
         asynchronous=True,
         dask=True,
+        engine="cudf",
         max_batch_size=args.max_batch_size,
     )
     sink = config["sink"]
