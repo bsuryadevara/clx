@@ -24,7 +24,7 @@ kafka_conf:
      #sasl.username: admin
      #sasl.password: <your password>
 elasticsearch_conf:
-   hosts: es01,es02
+   url: https://{}:{}@coord-bdc-l21.na.bestbuy.com:{}/
    port: 9200
    #cafile: /opt/nvidia/BBYCA.pem
    #username: admin

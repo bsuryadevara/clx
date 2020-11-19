@@ -82,22 +82,15 @@ def worker_init():
         from elasticsearch import Elasticsearch
 
         es_conf = config["elasticsearch_conf"]
-        #         from elasticsearch import AsyncElasticsearch
-        #
-        #         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
-
-        #         from ssl import create_default_context
-        #
-        #
-        #         context = create_default_context(cafile=es_conf["ca_file"])
-        #         es_client = Elasticsearch(
-        #             es_conf["hosts"].split(','),
-        #             http_auth=(es_conf['username'], es_conf['password']),
-        #             scheme="https",
-        #             port=es_conf["port"],
-        #             ssl_context=context,
-        #         )
-        es_client = Elasticsearch(es_conf["hosts"].split(","), port=es_conf["port"])
+#         from elasticsearch import AsyncElasticsearch
+# 
+#         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
+        es_client = Elasticsearch(
+            [es_conf["url"].format(es_conf['username'], es_conf['password'], es_conf['port'])],
+            use_ssl=True,
+            verify_certs=True,
+            ca_certs=es_conf["ca_file"]
+        )
         worker.data["sink"] = es_client
     else:
         print(
