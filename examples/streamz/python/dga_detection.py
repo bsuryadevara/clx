@@ -35,11 +35,11 @@ def inference(gdf):
     gdf["url"] = gdf.url.str.lower()
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
     domain_series = extracted_gdf["domain"] + "." + extracted_gdf["suffix"]
-    domain_series = domain_series.fillna(" ")
+    gdf['domain'] = domain_series.str.strip('.')
     dd = worker.data["dga_detector"]
     preds = dd.predict(domain_series)
     gdf["dga_probability"] = preds
-    gdf["processed_time"] = batch_start_time
+    gdf["insert_time"] = batch_start_time
     torch.cuda.empty_cache()
     gc.collect()
     return (gdf, batch_start_time, result_size)
