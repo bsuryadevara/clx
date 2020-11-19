@@ -142,12 +142,12 @@ def generate_tld_cols(hostname_split_df, hostnames, col_len):
     hostname_split_df["tld0"] = hostnames
     return hostname_split_df
 
-def _handle_unknown_suffix(merged_df):
+def _handle_unknown_suffix(merged_df, col_dict):
     unknown_suffix_df = merged_df[merged_df["dummy"].isna()]
     unknown_suffix_df = unknown_suffix_df.rename(columns={'tld0': 'hostname'})
     unknown_suffix_df = unknown_suffix_df[["idx", "hostname"]]
     if col_dict["domain"]:
-        unknown_suffix_df['domain'] = unknown_suffix_df['hostname']
+        unknown_suffix_df['domain'] = ""
     if not col_dict["hostname"]:
         unknown_suffix_df = unknown_suffix_df.drop("hostname", axis=1)
     if col_dict["subdomain"]:
@@ -222,11 +222,11 @@ def _extract_tld(input_df, suffix_df, col_len, col_dict):
                   input_df = input_df.drop(["dummy", tld_col], axis=1)
                 # Handles scenario when some records with last tld column matches to suffix list but not all.
                 if i == col_len:
-                    unknown_suffix_df = _handle_unknown_suffix(merged_df)
+                    unknown_suffix_df = _handle_unknown_suffix(merged_df, col_dict)
                     tmp_dfs.append(unknown_suffix_df)
             # Handles scenario when all records with last tld column doesn't match to suffix list.
             elif joined_recs_df.empty and i==col_len:
-                 unknown_suffix_df = _handle_unknown_suffix(merged_df)
+                 unknown_suffix_df = _handle_unknown_suffix(merged_df, col_dict)
                  tmp_dfs.append(unknown_suffix_df)
             else:
                 continue
