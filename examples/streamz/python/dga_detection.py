@@ -27,21 +27,29 @@ from clx.dns import dns_extractor as dns
 
 def inference(gdf):
     # Messages will be received and run through DGA inferencing
-    worker = dask.distributed.get_worker()
     batch_start_time = int(round(time.time()))
+    worker = dask.distributed.get_worker()
     result_size = gdf.shape[0]
     gdf = gdf[["message"]]
+    s_time = time.time()
     gdf["url"] = gdf.message.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
+    e_time = time.time()
+    print('time taken by extract function {} sec'.format(e_time-s_time))
     gdf["url"] = gdf.url.str.lower()
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
     domain_series = extracted_gdf["domain"] + "." + extracted_gdf["suffix"]
     gdf['domain'] = domain_series.str.strip('.')
     dd = worker.data["dga_detector"]
+    s_time = time.time()
     preds = dd.predict(domain_series)
+    e_time = time.time()
+    print('time taken by predict function {} sec'.format(e_time-s_time))
     gdf["dga_probability"] = preds
     gdf["insert_time"] = batch_start_time
     torch.cuda.empty_cache()
     gc.collect()
+    e_time = time.time()
+    print('time taken by inference function {} sec'.format(e_time-batch_start_time))
     return (gdf, batch_start_time, result_size)
 
 
