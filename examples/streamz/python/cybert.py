@@ -52,6 +52,12 @@ def sink_to_es(processed_data):
     return processed_data
 
 
+def sink_to_fs(processed_data):
+    # Prediction data will be written to disk
+    utils.fs_sink(config, processed_data[0])
+    return processed_data
+
+
 def signal_term_handler(signal, frame):
     # Receives signal and calculates benchmark if indicated in argument
     print("Exiting streamz script...")
@@ -85,13 +91,15 @@ def worker_init():
     )
     cy.load_local_model(args.model)
     worker.data["cybert"] = cy
-    if config["sink"] == "kafka":
+
+    sink = config["sink"].lower()
+    if sink == "kafka":
         import confluent_kafka as ck
 
         print("Producer conf: " + str(kafka_conf["producer_conf"]))
         producer = ck.Producer(kafka_conf["producer_conf"])
         worker.data["sink"] = producer
-    elif config["sink"] == "elasticsearch":
+    elif sink == "elasticsearch":
         from elasticsearch import Elasticsearch
 
         #         from elasticsearch import AsyncElasticsearch
@@ -111,9 +119,15 @@ def worker_init():
         #             ssl_context=context,
         #         )
         es_client = Elasticsearch(es_conf["hosts"].split(","), port=es_conf["port"])
+    elif sink == "filesystem":
+        print(
+            "Streaming process will write the output to location '{}'".format(
+                config["output_dir"]
+            )
+        )
     else:
         print(
-            "No valid sink provided in the configuration file. Please provide kafka/elasticsearch"
+            "No valid sink provided in the configuration file. Please provide kafka/elasticsearch/filesystem"
         )
         sys.exit(-1)
     print("Successfully initialized dask worker " + str(worker))

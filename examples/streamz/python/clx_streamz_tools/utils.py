@@ -18,10 +18,13 @@ import time
 import yaml
 import dask
 import argparse
+from datetime import datetime
 from collections import deque
 from distributed import Client
 from elasticsearch import helpers
 from dask_cuda import LocalCUDACluster
+
+TIME_FORMAT = "%Y-%m-%d_%H-%M-%S-%f"
 
 
 def create_dask_client():
@@ -43,11 +46,12 @@ def kafka_sink(output_topic, parsed_df):
 
 
 def fs_sink(config, parsed_df):
-    filename = (
-        datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f") + "." + config["file_extension"]
-    )
+    # s_time = time.time()
+    filename = datetime.now().strftime(TIME_FORMAT) + config["file_extension"]
     filepath = os.path.join(config["output_dir"], filename)
     parsed_df.to_csv(filepath, sep=config["col_delimiter"], index=False)
+    # e_time = time.time()
+    # print('time taken to write files to disk {} sec'.format(e_time-s_time))
 
 
 # async def streaming_bulk(docs, es):

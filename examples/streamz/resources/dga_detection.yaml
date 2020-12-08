@@ -33,5 +33,5 @@ elasticsearch_conf:
 sink: filesystem
 # below properties are used when sink is set to filesystem
 col_delimiter: ','
-file_extension: csv
-output_dir: '/ouput/dir/path/'
+file_extension: '.csv'
+output_dir: '/output/dir/path'

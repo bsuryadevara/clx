@@ -32,20 +32,20 @@ def inference(gdf):
     worker = dask.distributed.get_worker()
     result_size = gdf.shape[0]
     gdf = gdf[["message"]]
-    #s_time = time.time()
+    # s_time = time.time()
     gdf["url"] = gdf.message.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
-    gdf = gdf[gdf["url"].endswith(".arpa") == False]
-    #e_time = time.time()
-    #print("time taken by extract function {} sec".format(e_time - s_time))
     gdf["url"] = gdf.url.str.lower()
+    gdf = gdf[gdf["url"].str.endswith(".arpa") == False]
+    # e_time = time.time()
+    # print("time taken by extract function {} sec".format(e_time - s_time))
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
     domain_series = extracted_gdf["domain"] + "." + extracted_gdf["suffix"]
     gdf["domain"] = domain_series.str.strip(".")
     dd = worker.data["dga_detector"]
-    #s_time = time.time()
+    # s_time = time.time()
     preds = dd.predict(domain_series)
-    #e_time = time.time()
-    #print("time taken by predict function {} sec".format(e_time - s_time))
+    # e_time = time.time()
+    # print("time taken by predict function {} sec".format(e_time - s_time))
     gdf["dga_probability"] = preds
     gdf["insert_time"] = batch_start_time
     torch.cuda.empty_cache()
@@ -68,7 +68,7 @@ def sink_to_es(processed_data):
 
 
 def sink_to_fs(processed_data):
-    # Prediction data will be published to ElasticSearch cluster
+    # Prediction data will be written to disk
     utils.fs_sink(config, processed_data[0])
     return processed_data
 
@@ -88,13 +88,14 @@ def worker_init():
     dd.load_model(args.model)
     worker.data["dga_detector"] = dd
 
-    if config["sink"] == "kafka":
+    sink = config["sink"].lower()
+    if sink == "kafka":
         import confluent_kafka as ck
 
         print("Producer conf: " + str(kafka_conf["producer_conf"]))
         producer = ck.Producer(kafka_conf["producer_conf"])
         worker.data["sink"] = producer
-    elif config["sink"] == "elasticsearch":
+    elif sink == "elasticsearch":
         from elasticsearch import Elasticsearch
 
         es_conf = config["elasticsearch_conf"]
@@ -112,6 +113,12 @@ def worker_init():
             ca_certs=es_conf["ca_file"],
         )
         worker.data["sink"] = es_client
+    elif sink == "filesystem":
+        print(
+            "Streaming process will write the output to location '{}'".format(
+                config["output_dir"]
+            )
+        )
     else:
         print(
             "No valid sink provided in the configuration file. Please provide kafka/elasticsearch"
@@ -178,10 +185,11 @@ if __name__ == "__main__":
         "elasticsearch": sink_to_es,
         "filesystem": sink_to_fs,
     }
-    
+
     if not os.path.exists(config["output_dir"]):
+        print("Creating output directory '{}'".format(config["output_dir"]))
         os.makedirs(config["output_dir"])
-        
+
     # Handle script exit
     signal.signal(signal.SIGTERM, signal_term_handler)
     signal.signal(signal.SIGINT, signal_term_handler)
