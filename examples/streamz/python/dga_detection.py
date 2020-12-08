@@ -176,7 +176,7 @@ if __name__ == "__main__":
     sink_dict = {
         "kafka": sink_to_kafka,
         "elasticsearch": sink_to_es,
-        "filesystem": sink_to_es,
+        "filesystem": sink_to_fs,
     }
     
     if not os.path.exists(config["output_dir"]):
