@@ -24,10 +24,14 @@ kafka_conf:
      #sasl.username: admin
      #sasl.password: <your password>>
 elasticsearch_conf:
-   hosts: es01,es02
+   url: https://{}:{}@test.na.bestbuy.com:{}/
    port: 9200
    #cafile: /opt/nvidia/BBYCA.pem
    #username: admin
    #password: <your password>
-   index: cybert-parsed-logs
-sink: kafka
+   index: dns-logs
+sink: filesystem
+# below properties are used when sink is set to filesystem
+col_delimiter: ','
+file_extension: csv
+output_dir: '/ouput/dir/path/'

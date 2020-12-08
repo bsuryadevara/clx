@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import gc
 import sys
 import time
@@ -31,25 +32,26 @@ def inference(gdf):
     worker = dask.distributed.get_worker()
     result_size = gdf.shape[0]
     gdf = gdf[["message"]]
-    s_time = time.time()
+    #s_time = time.time()
     gdf["url"] = gdf.message.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
-    e_time = time.time()
-    print('time taken by extract function {} sec'.format(e_time-s_time))
+    gdf = gdf[gdf["url"].endswith(".arpa") == False]
+    #e_time = time.time()
+    #print("time taken by extract function {} sec".format(e_time - s_time))
     gdf["url"] = gdf.url.str.lower()
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
     domain_series = extracted_gdf["domain"] + "." + extracted_gdf["suffix"]
-    gdf['domain'] = domain_series.str.strip('.')
+    gdf["domain"] = domain_series.str.strip(".")
     dd = worker.data["dga_detector"]
-    s_time = time.time()
+    #s_time = time.time()
     preds = dd.predict(domain_series)
-    e_time = time.time()
-    print('time taken by predict function {} sec'.format(e_time-s_time))
+    #e_time = time.time()
+    #print("time taken by predict function {} sec".format(e_time - s_time))
     gdf["dga_probability"] = preds
     gdf["insert_time"] = batch_start_time
     torch.cuda.empty_cache()
     gc.collect()
     e_time = time.time()
-    print('time taken by inference function {} sec'.format(e_time-batch_start_time))
+    print("time taken by inference function {} sec".format(e_time - batch_start_time))
     return (gdf, batch_start_time, result_size)
 
 
@@ -62,6 +64,12 @@ def sink_to_kafka(processed_data):
 def sink_to_es(processed_data):
     # Prediction data will be published to ElasticSearch cluster
     utils.es_sink(config["elasticsearch_conf"], processed_data[0])
+    return processed_data
+
+
+def sink_to_fs(processed_data):
+    # Prediction data will be published to ElasticSearch cluster
+    utils.fs_sink(config, processed_data[0])
     return processed_data
 
 
@@ -90,14 +98,18 @@ def worker_init():
         from elasticsearch import Elasticsearch
 
         es_conf = config["elasticsearch_conf"]
-#         from elasticsearch import AsyncElasticsearch
-# 
-#         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
+        #         from elasticsearch import AsyncElasticsearch
+        #
+        #         es = AsyncElasticsearch([config["elasticsearch_conf"]["host"]])
         es_client = Elasticsearch(
-            [es_conf["url"].format(es_conf['username'], es_conf['password'], es_conf['port'])],
+            [
+                es_conf["url"].format(
+                    es_conf["username"], es_conf["password"], es_conf["port"]
+                )
+            ],
             use_ssl=True,
             verify_certs=True,
-            ca_certs=es_conf["ca_file"]
+            ca_certs=es_conf["ca_file"],
         )
         worker.data["sink"] = es_client
     else:
@@ -161,7 +173,15 @@ if __name__ == "__main__":
     args = utils.parse_arguments()
     config = utils.load_yaml(args.conf)
     kafka_conf = config["kafka_conf"]
-    sink_dict = {"kafka": sink_to_kafka, "elasticsearch": sink_to_es}
+    sink_dict = {
+        "kafka": sink_to_kafka,
+        "elasticsearch": sink_to_es,
+        "filesystem": sink_to_es,
+    }
+    
+    if not os.path.exists(config["output_dir"]):
+        os.makedirs(config["output_dir"])
+        
     # Handle script exit
     signal.signal(signal.SIGTERM, signal_term_handler)
     signal.signal(signal.SIGINT, signal_term_handler)
@@ -181,6 +201,8 @@ if __name__ == "__main__":
         sink = worker.data["sink"]
         if config["sink"] == "kafka":
             sink.close()
-        else:
+        elif config["sink"] == "elasticsearch":
             sink.transport.close()
+        else:
+            pass
         loop.stop()

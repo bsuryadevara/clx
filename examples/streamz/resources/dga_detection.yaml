@@ -24,10 +24,14 @@ kafka_conf:
      #sasl.username: admin
      #sasl.password: <your password>
 elasticsearch_conf:
-   url: https://{}:{}@coord-bdc-l21.na.bestbuy.com:{}/
+   url: https://{}:{}@test.na.bestbuy.com:{}/
    port: 9200
    #cafile: /opt/nvidia/BBYCA.pem
    #username: admin
    #password: <your password>
    index: dns-logs
-sink: elasticsearch
+sink: filesystem
+# below properties are used when sink is set to filesystem
+col_delimiter: ','
+file_extension: csv
+output_dir: '/ouput/dir/path/'

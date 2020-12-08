@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import json
 import time
 import yaml
@@ -40,6 +41,15 @@ def kafka_sink(output_topic, parsed_df):
         producer.produce(output_topic, json_rec)
     producer.flush()
 
+
+def fs_sink(config, parsed_df):
+    filename = (
+        datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f") + "." + config["file_extension"]
+    )
+    filepath = os.path.join(config["output_dir"], filename)
+    parsed_df.to_csv(filepath, sep=config["col_delimiter"], index=False)
+
+
 # async def streaming_bulk(docs, es):
 #     async for ok, result in helpers.async_streaming_bulk(es, docs):
 #                 action, result = result.popitem()
@@ -53,22 +63,25 @@ def kafka_sink(output_topic, parsed_df):
 #     for chunk in chunks:
 #         tasks.append(asyncio.ensure_future(streaming_bulk(chunk, es)))
 #     await asyncio.gather(*tasks)
-    
+
+
 def es_sink(config, parsed_df):
     worker = dask.distributed.get_worker()
     es_client = worker.data["sink"]
     parsed_df["_index"] = config["index"]
     json_str = parsed_df.to_json(orient="records")
     docs = json.loads(json_str)
-    pb = helpers.parallel_bulk(es_client, docs, 
-                               chunk_size=10000, 
-                               thread_count=10, 
-                               queue_size=10)
-    deque(pb, maxlen = 0)
+    pb = helpers.parallel_bulk(
+        es_client, docs, chunk_size=10000, thread_count=10, queue_size=10
+    )
+    deque(pb, maxlen=0)
+
+
 #     chunks = [docs[x:x+10000] for x in range(0, len(docs), 10000)]
 #     loop = asyncio.get_event_loop()
 #     loop.run_until_complete(upload(chunks))
-    
+
+
 def calc_benchmark(processed_data, size_per_log):
     # Calculates benchmark for the streamz workflow
     t1 = int(round(time.time() * 1000))
@@ -89,11 +102,13 @@ def calc_benchmark(processed_data, size_per_log):
     avg_batch_size = size / (1024.0 * batch_count) if batch_count > 0 else 0
     return (time_diff, throughput_mbps, avg_batch_size)
 
+
 def load_yaml(yaml_file):
     """Returns a dictionary of a configuration contained in the given yaml file"""
     with open(yaml_file) as yaml_file:
         config_dict = yaml.safe_load(yaml_file)
     return config_dict
+
 
 def parse_arguments():
     # Establish script arguments
