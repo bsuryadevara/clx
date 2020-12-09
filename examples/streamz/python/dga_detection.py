@@ -41,6 +41,8 @@ def inference(gdf):
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
     domain_series = extracted_gdf["domain"] + "." + extracted_gdf["suffix"]
     gdf["domain"] = domain_series.str.strip(".")
+    # e_parse_time = time.time()
+    # print("time taken by parse_url function {} sec".format(e_parse_time - e_time))
     dd = worker.data["dga_detector"]
     # s_time = time.time()
     preds = dd.predict(domain_series)
