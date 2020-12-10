@@ -36,6 +36,7 @@ def inference(gdf):
     gdf["url"] = gdf.message.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
     gdf["url"] = gdf.url.str.lower()
     gdf = gdf[gdf["url"].str.endswith(".arpa") == False]
+    gdf = gdf.reset_index(drop=True)
     # e_time = time.time()
     # print("time taken by extract function {} sec".format(e_time - s_time))
     extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
