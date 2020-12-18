@@ -35,6 +35,7 @@ def inference(gdf):
     parsed_df, confidence_df = worker.data["cybert"].inference(gdf["message"])
     confidence_df = confidence_df.add_suffix("_confidence")
     parsed_df = pd.concat([parsed_df, confidence_df], axis=1)
+    parsed_df['message'] = gdf['message'].values_host 
     torch.cuda.empty_cache()
     gc.collect()
     return (parsed_df, batch_start_time, result_size)

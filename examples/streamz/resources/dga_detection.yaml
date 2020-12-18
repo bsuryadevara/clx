@@ -1,6 +1,6 @@
 kafka_conf:
-   input_topic: dns_input
-   output_topic: dns_output
+   input_topic: dga_detection_input
+   output_topic: dga_detection_output
    n_partitions: 1
    producer_conf:
      bootstrap.servers: localhost:9092
@@ -30,7 +30,7 @@ elasticsearch_conf:
    #username: admin
    #password: <your password>
    index: dns-logs
-sink: filesystem
+sink: kafka
 # below properties are used when sink is set to filesystem
 col_delimiter: ','
 file_extension: '.csv'

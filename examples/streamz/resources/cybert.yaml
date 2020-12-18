@@ -30,7 +30,7 @@ elasticsearch_conf:
    #username: admin
    #password: <your password>
    index: dns-logs
-sink: filesystem
+sink: kafka
 # below properties are used when sink is set to filesystem
 col_delimiter: ','
 file_extension: '.csv'
