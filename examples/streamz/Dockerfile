@@ -86,6 +86,13 @@ RUN source activate rapids && \
 	
 WORKDIR /rapids/clx
 
-ENTRYPOINT ["/usr/bin/tini", "--", "bash", "/opt/clx_streamz/scripts/entrypoint.sh"]
+RUN groupadd gtxgroup -g 7207 && useradd gtxadmin -u 7206 -g gtxgroup -d /opt/nvidia/gtxadmin
+RUN mkdir -p /opt/nvidia
+RUN chown -R gtxadmin:gtxgroup /opt/nvidia && \
+    chown -R gtxadmin:gtxgroup $CLX_STREAMZ_HOME && \
+    chown -R gtxadmin:gtxgroup $KAFKA_HOME && \
+    chown -R gtxadmin:gtxgroup /rapids
+    
+VOLUME /opt/nvidia
 
-CMD [ "/bin/bash" ]
+USER gtxadmin
