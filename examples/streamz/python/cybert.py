@@ -21,23 +21,19 @@ from clx_streamz_tools import streamz_workflow
 
 
 class CybertWorkflow(streamz_workflow.StreamzWorkflow):
-    def inference(self, messages):
+    def inference(self, gdf):
         # Messages will be received and run through cyBERT inferencing
         worker = dask.distributed.get_worker()
         batch_start_time = int(round(time.time()))
-        df = cudf.DataFrame()
-        if type(messages) == str:
-            df["stream"] = [messages.decode("utf-8")]
-        elif type(messages) == list and len(messages) > 0:
-            df["stream"] = [msg.decode("utf-8") for msg in messages]
-        else:
-            print("ERROR: Unknown type encountered in inference")
-
-        result_size = df.shape[0]
+        result_size = gdf.shape[0]
+        gdf = gdf[["message"]]
         print("Processing batch size: " + str(result_size))
-        parsed_df, confidence_df = worker.data["cybert"].inference(df["stream"])
+        parsed_df, confidence_df = worker.data["cybert"].inference(gdf["message"])
         confidence_df = confidence_df.add_suffix("_confidence")
         parsed_df = pd.concat([parsed_df, confidence_df], axis=1)
+        parsed_df['message'] = gdf['message'].values_host 
+        torch.cuda.empty_cache()
+        gc.collect()
         return (parsed_df, batch_start_time, result_size)
 
     def worker_init(self):

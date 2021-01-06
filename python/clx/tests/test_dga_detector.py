@@ -41,6 +41,7 @@ def test_train_model():
         else:
             assert isinstance(dd.model, RNNClassifier)
 
+
 def test_evaluate_model():
     if torch.cuda.is_available():
         dataset = DGADataset(test_df)

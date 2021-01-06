@@ -19,16 +19,34 @@ from clx_streamz_tools import streamz_workflow
 
 
 class DGADetectionWorkflow(streamz_workflow.StreamzWorkflow):
-    def inference(self, messages_df):
+    def inference(self, gdf):
         # Messages will be received and run through DGA inferencing
-        worker = dask.distributed.get_worker()
         batch_start_time = int(round(time.time()))
-        result_size = messages_df.shape[0]
-        print("Processing batch size: " + str(result_size))
+        worker = dask.distributed.get_worker()
+        result_size = gdf.shape[0]
+        gdf = gdf[["message"]]
+        # s_time = time.time()
+        gdf["url"] = gdf.message.str.extract("query:\s([a-zA-Z\.\-\:\/\-0-9]+)")
+        gdf["url"] = gdf.url.str.lower()
+        gdf = gdf[gdf["url"].str.endswith(".arpa") == False]
+        gdf = gdf.reset_index(drop=True)
+        # e_time = time.time()
+        # print("time taken by extract function {} sec".format(e_time - s_time))
+        extracted_gdf = dns.parse_url(gdf["url"], req_cols={"domain", "suffix"})
+        domain_series = extracted_gdf["domain"] + "." + extracted_gdf["suffix"]
+        gdf["domain"] = domain_series.str.strip(".")
+        # e_parse_time = time.time()
+        # print("time taken by parse_url function {} sec".format(e_parse_time - e_time))
         dd = worker.data["dga_detector"]
-        preds = dd.predict(messages_df["domain"])
-        messages_df["preds"] = preds
-        return (messages_df, batch_start_time, result_size)
+        # s_time = time.time()
+        preds = dd.predict(domain_series)
+        # e_time = time.time()
+        # print("time taken by predict function {} sec".format(e_time - s_time))
+        gdf["dga_probability"] = preds
+        gdf["insert_time"] = batch_start_time
+        e_time = time.time()
+        print("time taken by inference function {} sec".format(e_time - batch_start_time))
+        return (gdf, batch_start_time, result_size)
 
     def worker_init(self):
         # Initialization for each dask worker

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import time
 import dask
 import cudf
@@ -31,10 +32,13 @@ class CybertWorkflow(streamz_workflow.StreamzWorkflow):
         print("Processing batch size: " + str(result_size))
         parsed_df, confidence_df = worker.data["cybert"].inference(input_gdf["message"])
         confidence_df = confidence_df.add_suffix("_confidence")
+        
         parsed_df = pd.concat([parsed_df, confidence_df], axis=1)
         parsed_gdf = cudf.from_pandas(parsed_df)
         parsed_gdf['message'] = input_gdf['message']
+        
         del input_gdf
+        
         parsed_gdf["url.full"] = parsed_gdf['url.full'].str.lower()
         parsed_gdf = parsed_gdf[parsed_gdf["url.full"].str.endswith(".arpa") == False]
         parsed_gdf = parsed_gdf.reset_index(drop=True)
