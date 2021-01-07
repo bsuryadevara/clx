@@ -71,17 +71,23 @@ class DGADetector(Detector):
         self, train_data, labels, batch_size=1000, epochs=5, train_size=0.7
     ):
         """This function is used for training RNNClassifier model with a given training dataset. It returns total loss to determine model prediction accuracy.
-        :param dataloader: Instance holds preprocessed data
-        :type dataloader: Dataloader
-        :return: Total loss
-        :rtype: int
+        :param train_data: Training data
+        :type train_data: cudf.Series
+        :param labels: labels data
+        :type labels: cudf.Series
+        :param batch_size: batch size
+        :type batch_size: int
+        :param epochs: Number of epochs for training
+        :type epochs: int
+        :param train_size: Training size for splitting training and test data
+        :type train_size: int
 
         Examples
         --------
         >>> from clx.analytics.dga_detector import DGADetector
         >>> dd = DGADetector()
         >>> dd.init_model()
-        >>> dd.train_model(dataloader)
+        >>> dd.train_model(train_data, labels)
         1.5728906989097595
         """
         train_dataloader, test_dataloader = self._preprocess_data(train_data, labels, batch_size, train_size)
@@ -222,7 +228,7 @@ class DGADetector(Detector):
         train_gdf["domain"] = train_data
         train_gdf["type"] = labels
         domain_train, domain_test, type_train, type_test = train_test_split(
-            train_gdf, "type", train_size=0.7
+            train_gdf, "type", train_size=train_size
         )
         test_df = self._create_df(domain_test, type_test)
         train_df = self._create_df(domain_train, type_train)
