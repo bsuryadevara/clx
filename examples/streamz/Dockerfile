@@ -1,13 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 # An integration test & dev container which builds and installs CLX from default branch
-ARG RAPIDS_VERSION=0.18
-ARG CUDA_VERSION=10.2
-ARG CUDA_SHORT_VERSION=${CUDA_VERSION}
-ARG LINUX_VERSION=ubuntu18.04
-ARG PYTHON_VERSION=3.7
-
-FROM rapidsai/rapidsai-dev-nightly:${RAPIDS_VERSION}-cuda${CUDA_VERSION}-devel-${LINUX_VERSION}-py${PYTHON_VERSION}
+FROM rapidsai/rapidsai-dev-nightly:0.18-cuda10.2-devel-ubuntu18.04-py3.7
 
 # Add everything from the local build context
 ADD . /rapids/clx/
