@@ -36,7 +36,7 @@ class CybertWorkflow(streamz_workflow.StreamzWorkflow):
         parsed_df = pd.concat([parsed_df, confidence_df], axis=1)
         parsed_gdf = cudf.from_pandas(parsed_df)
         parsed_gdf['message'] = input_gdf['message']
-        
+        parsed_gdf = parsed_gdf[~parsed_gdf['url.full'].isna()] 
         del input_gdf
         
         parsed_gdf["url.full"] = parsed_gdf['url.full'].str.lower()
@@ -78,7 +78,7 @@ class CybertWorkflow(streamz_workflow.StreamzWorkflow):
             + " with dga model. Model File: "
             + dga_model_filepath
         )
-        dd.load_model(self.args.model)
+        dd.load_model(dga_model_filepath)
         
         # this dict can be used for adding more objects to distributed dask worker
         obj_dict = {"cybert": cy, "dga_detector": dd}
