@@ -62,8 +62,7 @@ Your Quickstart Docker container includes the data and models required to run cy
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/cybert.py \
     --conf $CLX_STREAMZ_HOME/resources/cybert.yaml \
-    --model $CLX_STREAMZ_HOME/ml/models/cybert/pytorch_model.bin \
-    --label_map $CLX_STREAMZ_HOME/ml/models/cybert/config.json \
+    --model $CLX_STREAMZ_HOME/ml/models/cybert \
     --poll_interval 1s \
     --max_batch_size 500'
 ```
@@ -73,7 +72,7 @@ docker exec clx_streamz bash -c 'source activate rapids \
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/dga_detection.py \
     --conf $CLX_STREAMZ_HOME/resources/dga_detection.yaml \
-    --model $CLX_STREAMZ_HOME/ml/models/dga/pytorch_model.bin \
+    --model $CLX_STREAMZ_HOME/ml/models/dga \
     --poll_interval 1s \
     --max_batch_size 500'
 ```
@@ -97,8 +96,7 @@ To capture benchmarks add the benchmark flag along with average log size (kb), f
 docker exec clx_streamz bash -c 'source activate rapids \
     && python $CLX_STREAMZ_HOME/python/cybert.py \
     --conf $CLX_STREAMZ_HOME/resources/cybert.yaml \
-    --model $CLX_STREAMZ_HOME/ml/models/cybert/pytorch_model.bin \
-    --label_map $CLX_STREAMZ_HOME/ml/models/cybert/config.json \
+    --model $CLX_STREAMZ_HOME/ml/models/cybert \
     --poll_interval 1s \
     --max_batch_size 500 \
     --benchmark 20' \
@@ -112,6 +110,20 @@ $ docker exec clx_streamz ps aux | grep "cybert\.py" | awk '{print $2}'
 # Kill process
 $ docker exec clx_streamz kill -SIGINT <pid>
 $ less cybert_workflow.log
+```
+
+## Using both cyBERT and DGA Detection models in single workflow
+- Reads messages from kafka topic.
+- Parse input messages using cyBERT model.
+- Parsed information(url's) are passed to DGA detection model to predict dga probability.
+- Write parsed information along with dga predicitions to kafka topic.
+```
+docker exec clx_streamz bash -c 'source activate rapids \
+    && python $CLX_STREAMZ_HOME/python/dga_detection_v2.py \
+    --conf $CLX_STREAMZ_HOME/resources/dga_detection.yaml \
+    --model $CLX_STREAMZ_HOME/ml/models \
+    --poll_interval 1s \
+    --max_batch_size 500
 ```
 
 ## Steps to Run Workflow with Custom Arguments
@@ -133,16 +145,14 @@ $ less cybert_workflow.log
     docker exec clx_streamz bash -c 'source activate rapids \
         && python $CLX_STREAMZ_HOME/python/<workflow_script> \
         --conf <configuration filepath> \
-        --model <model filepath> \
-        --label_map <labels filepath> \
+        --model <model directory> \
         --poll_interval <poll_interval> \
         --max_batch_size <max_batch_size> \
         --benchmark <avg log size>'
     ```
     **Parameters:**
     - `conf` - The path to specify source and sink configuration properties.
-    - `model_file` - The path to your model file
-    - `label_file` - The path to your label file
+    - `model` - The path to your model directory
     - `poll_interval`* - Interval (in seconds) to poll the Kafka input topic for data (Ex: 60s)
     - `max_batch_size`* - Max batch size of data (max number of logs) to ingest into streamz with each `poll_interval`
     - `benchmark` - To capture benchmarks add the benchmark flag along with average log size (kb), for throughput (mb/s) and average batch size (mb) estimates.

@@ -54,13 +54,14 @@ class DGADetectionWorkflow(streamz_workflow.StreamzWorkflow):
 
         worker = dask.distributed.get_worker()
         dd = DGADetector()
+        dga_model_filepath = os.path.join(self.args.model, 'pytorch_model.bin')
         print(
             "Initializing Dask worker: "
             + str(worker)
             + " with dga model. Model File: "
-            + str(self.args.model)
+            + dga_model_filepath
         )
-        dd.load_model(self.args.model)
+        dd.load_model(dga_model_filepath)
         # this dict can be used for adding more objects to distributed dask worker
         obj_dict = {"dga_detector": dd}
         worker = utils.init_dask_workers(worker, self.config, obj_dict)

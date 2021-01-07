@@ -42,15 +42,17 @@ class CybertWorkflow(streamz_workflow.StreamzWorkflow):
 
         worker = dask.distributed.get_worker()
         cy = Cybert()
+        cybert_model_filepath = os.path.join(self.args.model, 'pytorch_model.bin')
+        cybert_labels_filepath = os.path.join(self.args.model, 'config.json')   
         print(
             "Initializing Dask worker: "
             + str(worker)
             + " with cybert model. Model File: "
-            + str(self.args.model)
+            + cybert_model_filepath
             + " Label Map: "
-            + str(self.args.label_map)
+            + str(cybert_labels_filepath)
         )
-        cy.load_model(self.args.model, self.args.label_map)
+        cy.load_model(cybert_model_filepath, cybert_labels_filepath)
         # this dict can be used for adding more objects to distributed dask worker
         obj_dict = {"cybert": cy}
         worker = utils.init_dask_workers(worker, self.config, obj_dict)
