@@ -46,7 +46,7 @@ class DGADetectionWorkflow(streamz_workflow.StreamzWorkflow):
         tld_extract_gdf = dns.parse_url(parsed_gdf['url.full'], req_cols={"domain", "suffix"})
         domain_series = tld_extract_gdf["domain"] + "." + tld_extract_gdf["suffix"]
         parsed_gdf["domain"] = domain_series.str.strip(".")
-        preds = worker.data["dga_detector"].predict(parsed_gdf["domain"])
+        preds = worker.data["dga_detector"].predict(parsed_gdf["domain"], probability=True)
         parsed_gdf["dga_probability"] = preds
         parsed_gdf["insert_time"] = batch_start_time
         return (parsed_gdf, batch_start_time, result_size)

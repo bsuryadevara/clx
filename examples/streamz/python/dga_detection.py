@@ -39,7 +39,7 @@ class DGADetectionWorkflow(streamz_workflow.StreamzWorkflow):
         # print("time taken by parse_url function {} sec".format(e_parse_time - e_time))
         dd = worker.data["dga_detector"]
         # s_time = time.time()
-        preds = dd.predict(domain_series)
+        preds = dd.predict(domain_series, probability=True)
         # e_time = time.time()
         # print("time taken by predict function {} sec".format(e_time - s_time))
         gdf["dga_probability"] = preds

@@ -116,7 +116,7 @@ class DGADetector(Detector):
                         )
             self.evaluate_model(test_dataloader)
 
-    def predict(self, domains):
+    def predict(self, domains, probability=False):
         """This function accepts cudf series of domains as an argument to classify domain names as benign/malicious and returns the learned label for each object in the form of cudf series.
         :param domains: List of domains.
         :type domains: cudf.Series
@@ -136,15 +136,20 @@ class DGADetector(Detector):
         df.index = temp_df.index
         df["domain"] = temp_df["domain"]
         temp_df = temp_df.drop("domain", axis=1)
-        input, seq_lengths = self.__create_variables(temp_df)
+        input, seq_lengths = self._create_variables(temp_df)
         del temp_df
         model_result = self.model(input, seq_lengths)
-        model_result = model_result[: , 0]
-        dga_proabability = torch.sigmoid(model_result)
-        dga_proabability = dga_proabability.view(-1).tolist()
-        df["dga_probability"] = dga_proabability
+        if probability:
+            model_result = model_result[:, 0]
+            preds = torch.sigmoid(model_result)
+            preds = preds.view(-1).tolist()
+            df["preds"] = preds
+        else:
+            preds = model_result.data.max(1, keepdim=True)[1]
+            preds = preds.view(-1).tolist()
+            df["preds"] = preds
         df = df.sort_index()
-        return df["dga_probability"]
+        return df["preds"]
 
     def _create_types_tensor(self, type_series):
         """Create types tensor variable in the same order of sequence tensor"""
