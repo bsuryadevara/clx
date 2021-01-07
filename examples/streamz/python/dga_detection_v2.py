@@ -22,7 +22,7 @@ from clx.dns import dns_extractor as dns
 from clx_streamz_tools import streamz_workflow
 
 
-class CybertWorkflow(streamz_workflow.StreamzWorkflow):
+class DGADetectionWorkflow(streamz_workflow.StreamzWorkflow):
     def inference(self, input_gdf):
         # Messages will be received and run through cyBERT inferencing
         worker = dask.distributed.get_worker()
@@ -86,5 +86,5 @@ class CybertWorkflow(streamz_workflow.StreamzWorkflow):
 
 
 if __name__ == "__main__":
-    cybert = CybertWorkflow()
-    cybert.start()
+    dga_detection = DGADetectionWorkflow()
+    dga_detection.start()
