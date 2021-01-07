@@ -310,13 +310,16 @@ def parse_url(url_series, req_cols=None):
     log.info("Extracting hostnames is successfully completed.")
     hostname_split_df = hostnames.str.findall("([^.]+)")
     col_len = len(hostname_split_df.columns) - 1
-    if col_len == 0:
+    if not col_len:
         output_df = cudf.DataFrame()
-        for col in req_cols:
-            if col == 'domain':
-                output_df[col] = url_series
-            else:
-                output_df[col] = ""
+        if 'domain' in req_cols:
+            output_df['domain'] = url_series
+        if 'hostname' in req_cols:
+            output_df['hostname'] = url_series
+        if 'subdomain' in req_cols:
+            output_df['subdomain'] = ""
+        if 'suffix' in req_cols:
+            output_df['suffix'] = ""
         return output_df
     del url_series
     log.info("Generating tld columns...")
