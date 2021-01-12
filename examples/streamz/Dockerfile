@@ -57,7 +57,7 @@ EXPOSE 2181
 EXPOSE 9092
 
 RUN source activate rapids && \
-    conda install -c pytorch "pytorch>=1.7" torchvision "cudf_kafka=0.17" "custreamz=0.17" "scikit-learn>=0.21" ipywidgets python-confluent-kafka transformers "seqeval=0.0.12" python-whois seaborn requests matplotlib pytest jupyterlab "openjdk=8.0.152" dask-cuda && \
+    conda install -c pytorch cudatoolkit=10.1 "pytorch>=1.7" torchvision "cudf_kafka=0.17" "custreamz=0.17" "scikit-learn>=0.21" ipywidgets python-confluent-kafka transformers "seqeval=0.0.12" python-whois seaborn requests matplotlib pytest jupyterlab "openjdk=8.0.152" dask-cuda && \
     pip install "git+https://github.com/rapidsai/cudatashader.git" && \
     pip install mockito && \
     pip install wget && \
