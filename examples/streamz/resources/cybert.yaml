@@ -1,5 +1,5 @@
 # cudf_engine currently supports only on flatten json input data
-cudf_engine: false
+cudf_engine: ture
 kafka_conf:
    input_topic: cybert_input
    output_topic: cybert_output

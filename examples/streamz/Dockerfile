@@ -1,7 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 # An integration test & dev container which builds and installs CLX from default branch
-FROM rapidsai/rapidsai-dev-nightly:0.18-cuda10.2-devel-ubuntu18.04-py3.7
+FROM rapidsai/rapidsai-dev:0.17-cuda10.1-devel-ubuntu16.04-py3.7
 
 # Add everything from the local build context
 ADD . /rapids/clx/
@@ -57,8 +57,7 @@ EXPOSE 2181
 EXPOSE 9092
 
 RUN source activate rapids && \
-    conda install "cudf_kafka=0.18" "custreamz=0.18" "scikit-learn>=0.21" "nodejs>=12" ipywidgets python-confluent-kafka "transformers=3.5.*" "seqeval=0.0.12" python-whois seaborn requests matplotlib pytest jupyterlab "openjdk=8.0.152" dask-cuda && \
-    pip install torch==1.7.1 torchvision==0.8.2 && \
+    conda install -c pytorch "pytorch>=1.7" torchvision "cudf_kafka=0.17" "custreamz=0.17" "scikit-learn>=0.21" ipywidgets python-confluent-kafka transformers "seqeval=0.0.12" python-whois seaborn requests matplotlib pytest jupyterlab "openjdk=8.0.152" dask-cuda && \
     pip install "git+https://github.com/rapidsai/cudatashader.git" && \
     pip install mockito && \
     pip install wget && \
