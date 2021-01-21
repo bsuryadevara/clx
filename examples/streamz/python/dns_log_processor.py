@@ -20,7 +20,7 @@ import pandas as pd
 from clx_streamz_tools import utils
 from clx.dns import dns_extractor as dns
 from clx_streamz_tools import streamz_workflow
-
+from clx.dns import dns_extractor as dns
 
 class DNSLogProcessingWorkflow(streamz_workflow.StreamzWorkflow):
     def inference(self, input_gdf):
