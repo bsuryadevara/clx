@@ -35,7 +35,7 @@ class DNSLogProcessingWorkflow(streamz_workflow.StreamzWorkflow):
         parsed_df = pd.concat([parsed_df, confidence_df], axis=1)
         parsed_gdf = cudf.from_pandas(parsed_df)
         parsed_gdf['message'] = input_gdf['message']
-        parsed_gdf = parsed_gdf[~parsed_gdf['url.full'].isna()] 
+        parsed_gdf = parsed_gdf[(~parsed_gdf['url.full'].isna()) and (parsed_gdf['url.full'] != '.')]
         del input_gdf
         
         parsed_gdf["url.full"] = parsed_gdf['url.full'].str.lower()
