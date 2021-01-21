@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ class Cybert:
         self._model.cuda()
         self._model.eval()
 
-    def preprocess(self, raw_data_col, stride_len=116, max_seq_len=128):
+    def preprocess(self, raw_data_col, stride_len=244, max_seq_len=256):
         """
         Preprocess and tokenize data for cybert model inference.
 
@@ -111,25 +111,32 @@ class Cybert:
         raw_data_col = raw_data_col.str.replace("\\t", " ")
         raw_data_col = raw_data_col.str.replace("=", "= ")
         raw_data_col = raw_data_col.str.replace("\\n", " ")
-
+        raw_data_col = raw_data_col.str.replace("[", " ")
+        raw_data_col = raw_data_col.str.replace("]", " ")
+        raw_data_col = raw_data_col.str.replace("(", " ")
+        raw_data_col = raw_data_col.str.replace(")", " ")
+        raw_data_col = raw_data_col.str.replace("#", " ")
+        raw_data_col = raw_data_col.str.replace(": ", " : ")
+        raw_data_col = raw_data_col.str.replace("<", "< ")
+        raw_data_col = raw_data_col.str.replace(">", " >")
         byte_count = raw_data_col.str.byte_count()
         max_rows_tensor = int((byte_count / 120).ceil().sum())
 
         input_ids, att_mask, meta_data = raw_data_col.str.subword_tokenize(
             self._hashpath,
-            128,
-            116,
+            256,
+            244,
             max_rows_tensor=max_rows_tensor,
             do_lower=False,
             do_truncate=False,
         )
 
-        num_rows = int(len(input_ids) / 128)
+        num_rows = int(len(input_ids) / 256)
         input_ids = from_dlpack(
-            (input_ids.reshape(num_rows, 128).astype(cupy.float)).toDlpack()
+            (input_ids.reshape(num_rows, 256).astype(cupy.float)).toDlpack()
         )
         att_mask = from_dlpack(
-            (att_mask.reshape(num_rows, 128).astype(cupy.float)).toDlpack()
+            (att_mask.reshape(num_rows, 256).astype(cupy.float)).toDlpack()
         )
         meta_data = meta_data.reshape(num_rows, 3)
 
@@ -226,7 +233,7 @@ class Cybert:
             row["labels"], row["confidences"], row["token_ids"]
         ):
             text_token = self._vocab_lookup[token_id]
-            if text_token[:2] != "##":
+            if (text_token[:2] != "##") and (self._label_map[label] != "X") :
                 # if not a subword use the current label, else use previous
                 new_label = label
                 new_confidence = confidence
@@ -252,4 +259,5 @@ class Cybert:
             .replace(" \) ", ") ", regex=True)
             .replace("\+ ", "+", regex=True)
             .replace(" . ", ".", regex=True)
+            .replace(" . ", "", regex=True)
         )
