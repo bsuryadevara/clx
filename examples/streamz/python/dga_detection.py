@@ -17,6 +17,7 @@ import time
 import dask
 from clx_streamz_tools import utils
 from clx_streamz_tools import streamz_workflow
+from clx.dns import dns_extractor as dns
 
 
 class DGADetectionWorkflow(streamz_workflow.StreamzWorkflow):
