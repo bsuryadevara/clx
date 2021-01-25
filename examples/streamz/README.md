@@ -76,6 +76,15 @@ docker exec clx_streamz bash -c 'source activate rapids \
     --poll_interval 1s \
     --max_batch_size 500'
 ```
+## Run cyBERT parsing and DGA Streamz Example
+```
+docker exec clx_streamz bash -c 'source activate rapids \
+    && python $CLX_STREAMZ_HOME/python/dns_log_processor.py \
+    --conf $CLX_STREAMZ_HOME/resources/cybert.yaml \
+    --model $CLX_STREAMZ_HOME/ml/models \
+    --poll_interval 1s \
+    --max_batch_size 500'
+```
 
 Processed data will be pushed to the given kafka output topic. To view all processed output run:
 
