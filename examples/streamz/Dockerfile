@@ -28,7 +28,7 @@ RUN apt-get install -y librdkafka-dev \
     apt-get clean
 
 ENV SCALA_VERSION 2.13
-ENV KAFKA_VERSION 2.5.1
+ENV KAFKA_VERSION 2.7.0
 ENV CLX_HOME /opt/nvidia/gtxadmin/clx
 ENV CLX_STREAMZ_HOME /opt/nvidia/gtxadmin/clx_streamz
 ENV KAFKA_HOME /opt/nvidia/gtxadmin/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION"
@@ -41,7 +41,7 @@ RUN mkdir -p "$CLX_STREAMZ_HOME"/ml/models/cybert && \
 	mkdir "$CLX_STREAMZ_HOME"/ml/models/dga && \
     mkdir "$CLX_STREAMZ_HOME"/ml/models/bert-base-cased
 
-RUN wget -q https://downloads.apache.org/kafka/2.5.1/kafka_2.13-2.5.1.tgz -O /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz && \
+RUN wget -q https://downloads.apache.org/kafka/2.7.0/kafka_2.13-2.7.0.tgz -O /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz && \
         tar xfz /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz -C /opt/nvidia/gtxadmin && \
         rm /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz
 
