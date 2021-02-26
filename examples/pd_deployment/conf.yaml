@@ -1,0 +1,24 @@
+email_conf:
+  folder: phishing
+  mailserver: outlook.office365.com
+  password: <password>
+  search: (UNSEEN)
+  seen_flag: true
+  username: bsuryadevara@nvidia.com
+kafka_conf:
+  producer_conf:
+    bootstrap.servers: localhost:9092
+    session.timeout.ms: '10000'
+  publish_topic: phishing_email_score
+model_conf:
+  inference_log_dir: /rapids/phishing_email/inferenced_logs
+  save_model_dir: /rapids/phishing_email/trained_models
+  trained_model_dir: 
+splunk_conf:
+  query: search `notable` | where rule_name="Phishing" | table reported_by, sender,
+    subject, urgency
+  server_conf:
+    host: localhost
+    password: <password>
+    schema: http
+    username: rapids-api
