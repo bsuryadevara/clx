@@ -27,6 +27,7 @@ sub2 = re.compile("(?<=\\nSubject:\\s)(.*?)(?=\\n)")
 recip = re.compile("(?<=^To: )(.*)(?=\n)")
 recip2 = re.compile("(?<=\\nTo:\\s)(.*?)(?=\\n)")
 
+
 sndr = re.compile("(?<=^FROM: )(.*)(?=\n)")
 sndr2 = re.compile("(?<=\\nFrom:\\s)(.*?)(?=\\n)")
 
@@ -145,12 +146,21 @@ def html_as_text(raw_email):
 
 def extract_special_emails(raw_email):
     ec = EmailContent()
-
-    if "Content-transfer-encoding: base64" in raw_email and "<html" in raw_email:
+    has_base64_encode_type_two = False
+    has_base64_encode_type_one = "Content-transfer-encoding: base64" in raw_email
+    if not has_base64_encode_type_one:
+        has_base64_encode_type_two = "Content-Transfer-Encoding: base64" in raw_email
+        
+    if (has_base64_encode_type_one or has_base64_encode_type_two) and "<html" in raw_email:
         try:
-            attachment = re.search(
-                "Content-transfer-encoding: base64(.*)", raw_email, re.DOTALL
-            ).group(1)
+            if has_base64_encode_type_one:
+                attachment = re.search(
+                    "Content-transfer-encoding: base64(.*)", raw_email, re.DOTALL
+                ).group(1)
+            else:
+                 attachment = re.search(
+                    "Content-Transfer-Encoding: base64(.*)", raw_email, re.DOTALL
+                ).group(1)
             attachment = attachment.split("\r\n--")[0]
             attachment = base64.b64decode(attachment).decode("utf-8")
             (sender_email, recipient_email, date) = extract_header(attachment)
@@ -185,10 +195,15 @@ def extract_special_emails(raw_email):
             ec.date = date
             ec.body = body
 
-    elif "Content-transfer-encoding: base64" in raw_email:
-        attachment = re.search(
-            "Content-transfer-encoding: base64(.*)", raw_email, re.DOTALL
-        ).group(1)
+    elif has_base64_encode_type_one or has_base64_encode_type_two:
+        if has_base64_encode_type_one:
+            attachment = re.search(
+                "Content-transfer-encoding: base64(.*)", raw_email, re.DOTALL
+            ).group(1)
+        else:
+            attachment = re.search(
+                    "Content-Transfer-Encoding: base64(.*)", raw_email, re.DOTALL
+                ).group(1)
         attachment = attachment.split("\r\n--")[0]
         try:
             attachment = base64.b64decode(attachment).decode("utf-8")
@@ -365,5 +380,3 @@ def parse_arguments():
     )
     args = parser.parse_args()
     return args
-
-

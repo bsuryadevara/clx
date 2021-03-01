@@ -200,8 +200,8 @@ def extract_emails(messages, conn):
 
         except Exception as e:
             count += 1
-            print(raw_email)
-            traceback.print_exc()
+            print(repr(raw_email))
+            print(traceback.print_exc())
             print(
                 "Error occured while processing attachment for email {}: {}".format(
                     email_message.get("From"), e
