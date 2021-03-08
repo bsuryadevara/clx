@@ -39,14 +39,14 @@ class PhishingEmailDetection:
         results = splunk_utils.execute_query(query, kwargs)
         labels_gdf = cudf.DataFrame(results)
 
-        labels_gdf = labels_gdf[labels_gdf["urgency"] != "low"]
+        labels_gdf = labels_gdf[labels_gdf["urgency"] != "medium"]
         labels_gdf["sender"] = labels_gdf["sender"].str.lower()
         labels_gdf["reported_by"] = labels_gdf["reported_by"].str.lower()
 
         labels_gdf["urgency"] = labels_gdf["urgency"].str.replace("critical", "1")
         labels_gdf["urgency"] = labels_gdf["urgency"].str.replace("high", "1")
         labels_gdf["urgency"] = labels_gdf["urgency"].str.replace("informational", "0")
-        labels_gdf["urgency"] = labels_gdf["urgency"].str.replace("medium", "0")
+        labels_gdf["urgency"] = labels_gdf["urgency"].str.replace("low", "0")
         labels_gdf["urgency"] = labels_gdf["urgency"].astype("int64")
 
         joined_df = labels_gdf.merge(
@@ -146,7 +146,7 @@ def extract_emails(messages, conn):
             reported_by = reported_by[0]
             if "<" in reported_by:
                 reported_by = utils.EMAIL_RGX.findall(reported_by)[0]
-            # print("reported_by: {}".format(reported_by))
+            print("reported_by: {}".format(reported_by))
             # Iterate over only attachments
             try:
                 for attachment in email_message.iter_attachments():
@@ -299,5 +299,3 @@ if __name__ == "__main__":
     args = utils.parse_arguments()
     print("Arguments passed: {} ".format(args))
     start_process(args.conf, args.mode)
-
-
