@@ -20,9 +20,9 @@ import transformers
 from cuml.preprocessing.model_selection import train_test_split
 from faker import Faker
 
-from clx.analytics.sequence_classifier import SequenceClassifier
+from clx.analytics.binary_sequence_classifier import BinarySequenceClassifier
 
-sc = SequenceClassifier()
+sc = BinarySequenceClassifier()
 if torch.cuda.is_available():
     sc.init_model("bert-base-uncased")
 
@@ -72,3 +72,22 @@ def test_save_model(tmpdir):
         sc.save_model(tmpdir)
         assert path.exists(str(tmpdir.join("config.json")))
         assert path.exists(str(tmpdir.join("pytorch_model.bin")))
+
+
+def test_save_checkpoint(tmpdir):
+    if torch.cuda.is_available():
+        fname = str(tmpdir.mkdir("tmp_test_sequence_classifier").join("sc_checkpoint.tar"))
+        sc.save_checkpoint(fname)
+        assert path.exists(fname)
+
+
+def test_load_checkpoint(tmpdir):
+    if torch.cuda.is_available():
+        fname = str(tmpdir.mkdir("tmp_test_sequence_classifier").join("sc_checkpoint.tar"))
+        sc.save_checkpoint(fname)
+        assert path.exists(fname)
+        sc.load_checkpoint(fname)
+        assert isinstance(
+            sc._model.module,
+            transformers.models.bert.modeling_bert.BertForSequenceClassification,
+        )
